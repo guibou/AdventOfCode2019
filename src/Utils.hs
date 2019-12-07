@@ -37,6 +37,7 @@ import qualified Data.Set as Set
 import Data.Set (Set)
 import Data.HashMap.Strict (HashMap)
 import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
 import Data.Vector (Vector)
 
 import Data.FileEmbed (embedStringFile)
@@ -158,6 +159,32 @@ unsafeRead2D = parse2D unsafeRead
 
 unsafeRead1D :: Read t => Text -> [t]
 unsafeRead1D = map unsafeRead . Text.words
+
+parse2DGrid :: (Text -> a) -> Text -> Map (Int, Int) a
+parse2DGrid f t = Map.fromList $ do
+  (y, l) <- zip [0..] (parse2D f t)
+  (x, v) <- zip [0..] l
+
+  pure ((x, y), v)
+
+getBounds :: Map (Int, Int) t -> ((Int, Int), (Int, Int))
+getBounds g =
+  let
+  minX = minimum $ map fst $ Map.keys g
+  minY = minimum $ map snd $ Map.keys g
+  maxX = maximum $ map fst $ Map.keys g
+  maxY = maximum $ map snd $ Map.keys g
+
+  in ((minX, minY), (maxX, maxY))
+
+display2DGrid :: Map (Int, Int) Text -> IO ()
+display2DGrid g =
+  let ((minX, minY), (maxX, maxY)) = getBounds g
+  in
+  for_ [minY .. maxY] $ \y -> do
+    for_ [minX .. maxX] $ \x -> do
+      putStr $ (Map.!) g (x, y)
+    putStrLn ("" :: Text)
 
 -- * Tests Utile
 thisModuleName :: Q Exp
