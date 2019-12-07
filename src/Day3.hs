@@ -4,6 +4,7 @@ import Utils
 
 import Text.Megaparsec
 import qualified Data.Set as Set
+import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
 import Data.List (findIndex)
 
@@ -40,7 +41,7 @@ nextMove (x, y) m = case m of
 
 
 -- * FIRST problem
-day :: _ -> _
+day :: _ -> Int
 day (path0, path1) =
   let position0 = drop 1 $ walkPath path0
       position1 = drop 1 $ walkPath path1
@@ -54,16 +55,16 @@ manhattan (x, y) (x', y') = abs (x - x') + abs (y - y')
 -- first star at 16:56
 
 -- * SECOND problem
-day' :: _ -> _
+day' :: _ -> Int
 day' (path0, path1) =
-  let position0 = walkPath path0
-      position1 = walkPath path1
+  let position0 = Map.fromList (zip (walkPath path0) [0..])
+      position1 = Map.fromList (zip (walkPath path1) [0..])
 
-      intersections = Set.delete (0, 0) (Set.intersection (Set.fromList position0) (Set.fromList position1))
+      intersections = Set.delete (0, 0) (Set.intersection (Map.keysSet position0) (Map.keysSet position1))
 
       f it = let
-        Just steps0 = findIndex (==it) position0
-        Just steps1 = findIndex (==it) position1
+        Just steps0 = Map.lookup it position0
+        Just steps1 = Map.lookup it position1
         in (steps0 + steps1)
   in minimum (map f (Set.toList intersections))
 
