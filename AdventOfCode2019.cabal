@@ -1,0 +1,73 @@
+name:                AdventOfCode2019
+version:             0.1.0.0
+synopsis:            Advent of code - Season 2019
+description:         Please see README.md
+homepage:            https://github.com/guibou/AdventOfCode2019#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Guillaume Bouchard
+maintainer:          guillaum.bouchard@gmail.com
+copyright:           2019 Guillaume Bouchard
+category:            Web
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  exposed-modules:       Utils
+  build-depends:       base
+                       hspec,
+                       megaparsec,
+                       cryptohash,
+                       base16-bytestring,
+                       bytestring,
+                       containers,
+                       parallel,
+                       time,
+                       vector,
+                       file-embed,
+                       unordered-containers,
+                       template-haskell,
+                       memoize,
+                       split,
+                       here,
+                       protolude,
+                       text,
+                       union-find,
+                       hex,
+                       matrix,
+                       hashable,
+                       mtl,
+                       generic-deriving,
+                       JuicyPixels,
+                       pqueue,
+                       random,
+                       sbv
+  default-extensions: TupleSections
+                    , DeriveAnyClass
+                    , StandaloneDeriving
+                    , DeriveGeneric
+                    , OverloadedStrings
+                    , BangPatterns
+                    , ViewPatterns
+                    , PatternSynonyms
+                    , ScopedTypeVariables
+                    , BinaryLiterals
+                    , TemplateHaskell
+                    , PartialTypeSignatures
+                    , QuasiQuotes
+                    , GeneralizedNewtypeDeriving
+                    , DerivingStrategies
+                    , NoImplicitPrelude
+                    , FlexibleContexts
+                    , LambdaCase
+                    , TypeApplications
+                    , NamedFieldPuns
+  ghc-options: -Wall -Wno-missing-signatures -fwarn-incomplete-uni-patterns -Wno-missing-home-modules -Wno-deprecations -Wno-partial-type-signatures
+
+  default-language:    Haskell2010
+
+source-repository head
+  type:     git
+  location: https://github.com/guibou/AdventOfCode2019
