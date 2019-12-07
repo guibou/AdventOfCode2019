@@ -16,7 +16,7 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:       Utils
-  build-depends:       base
+  build-depends:       base,
                        hspec,
                        megaparsec,
                        cryptohash,
@@ -42,8 +42,9 @@ library
                        generic-deriving,
                        JuicyPixels,
                        pqueue,
-                       random,
-                       sbv
+                       random
+                       -- sbv
+
   default-extensions: TupleSections
                     , DeriveAnyClass
                     , StandaloneDeriving

@@ -144,7 +144,7 @@ select (x:xs) = (x, xs):((x:) <$$> (select xs))
 unsafeParse :: Parser t -> Text -> t
 unsafeParse p s = case parse p "" s of
   Right res -> res
-  Left e -> panic (Text.pack (parseErrorPretty e))
+  Left e -> panic (Text.pack (errorBundlePretty e))
 
 -- Text utils
 unsafeRead :: Read t => Text -> t
@@ -181,8 +181,8 @@ cycleSucc o
 pow10 :: Int -> Int
 pow10 a = 10 ^ a
 
-parseNumber :: (Num t) => Parser t
-parseNumber = fromIntegral <$> L.signed sc (lexeme L.decimal)
+parseNumber :: Integral t => Parser t
+parseNumber = L.signed sc (lexeme L.decimal)
   {-
   f <- Text.Megaparsec.option identity (char '-' $> negate)
   d <- L.decimal

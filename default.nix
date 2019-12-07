@@ -1,8 +1,8 @@
 with import (builtins.fetchTarball {
-url = https://github.com/NixOS/nixpkgs/archive/3a393eecafb3fcd9db5ff94783ddab0c55d15860.tar.gz;
-sha256 = "1r7pycxxjcz3idyl35am4b4rdh4h5srd5r7w8msy2sc1sv830r30";
+url = https://github.com/NixOS/nixpkgs/archive/3140fa89c51.tar.gz;
+sha256 = "18p0d5lnfvzsyfah02mf6bi249990pfwnylwhqdh8qi70ncrk3f8";
 }) {};
-with pkgs.haskell.packages.ghc844;
+with pkgs.haskellPackages;
 developPackage {
   root = ./.;
 }
