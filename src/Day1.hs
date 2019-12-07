@@ -2,31 +2,38 @@ module Day1 where
 
 import Utils
 
-fileContent :: Text
-fileContent = $(getFile)
+-- 15:20
+
+fileContent :: [Int]
+fileContent = unsafeParse (some parseNumber) $(getFile)
 
 -- * Generics
-
+fuelForModule mass = mass `div` 3 - 2
 
 -- * FIRST problem
-day :: _ -> Int
-day = undefined
+day :: [Int] -> Int
+day = sum . map fuelForModule
+
+-- 15:23: first star
+
+crazyFuelRequirement mass
+  | mass >= 0 = let
+      fuel = fuelForModule mass
+      in fuel + (max 0 (crazyFuelRequirement fuel))
+  | otherwise = 0
 
 -- * SECOND problem
-day' :: _ -> Int
-day' = undefined
+day' :: [Int] -> Int
+day' = sum . map crazyFuelRequirement
+
+-- 15:27 second start
 
 -- * Tests
 
--- test :: Spec
--- test = do
---   describe "simple examples" $ do
---     it "of first star" $ do
---       day "" `shouldBe` 0
---     it "of second star" $ do
---       day' "" `shouldBe` 0
---  describe "woks" $ do
---    it "on first star" $ do
---      day fileContent `shouldBe` 1228
---    it "on second star" $ do
---      day' fileContent `shouldBe` 1238
+test :: Spec
+test = do
+  describe "woks" $ do
+    it "on first star" $ do
+      day fileContent `shouldBe` 3380731
+    it "on second star" $ do
+      day' fileContent `shouldBe` 5068210
