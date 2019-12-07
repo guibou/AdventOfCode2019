@@ -5,6 +5,7 @@ import Utils
 import Day1
 import Day2
 import Day3
+import Day4
 
 -- Test all samples and return a timing for all
 tests = hspec $ mapM_ (\(name, s) -> describe name s) $(thisModuleName)
