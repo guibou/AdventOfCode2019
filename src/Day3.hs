@@ -6,39 +6,22 @@ import Text.Megaparsec
 import qualified Data.Set as Set
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
-import Data.List (findIndex)
+
+import Direction
 
 -- start 16:40
 
-data Move = U | D | L | R
-  deriving (Show)
+move :: Parser (Direction, Int)
+move = (,) <$> parseUDLR <*> parseNumber
 
-move :: Parser (Move, Int)
-move = (,) <$> choice [
-  "U" $> U,
-  "L" $> L,
-  "D" $> D,
-  "R" $> R] <*> parseNumber
-
-fileContent :: ([(Move, Int)], [(Move, Int)])
+fileContent :: ([(Direction, Int)], [(Direction, Int)])
 fileContent = let
   [l0, l1] = Text.lines $(getFile)
   in (unsafeParse (move `sepBy` ",") l0, unsafeParse (move `sepBy` ",") l1)
 
 -- * Generics
-walkPath :: [(Move, Int)] -> [(Int, Int)]
-walkPath moves = scanl nextMove (0, 0) (flattenMoves moves)
-
-flattenMoves moves = concatMap flattenMove moves
-
-flattenMove (m, v) = replicate v m
-
-nextMove (x, y) m = case m of
-  U -> (x, y + 1)
-  D -> (x, y - 1)
-  L -> (x - 1, y)
-  R -> (x + 1, y)
-
+walkPath :: [(Direction, Int)] -> [(Int, Int)]
+walkPath moves = scanl' (flip nextDirection) (0, 0) (flattenDirections moves)
 
 -- * FIRST problem
 day :: _ -> Int
