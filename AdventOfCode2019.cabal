@@ -42,8 +42,9 @@ library
                        generic-deriving,
                        JuicyPixels,
                        pqueue,
-                       random
-                       -- sbv
+                       random,
+                       sbv,
+                       PyF
 
   default-extensions: TupleSections
                     , DeriveAnyClass

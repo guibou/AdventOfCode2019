@@ -2,49 +2,49 @@ module Day2 where
 
 import Utils
 import Text.Megaparsec
-import qualified Data.Vector as V
+import Data.Vector hiding (unsafeHead)
 
 -- start 15:30
 
-fileContent :: V.Vector Int
-fileContent = V.fromList $ (fmap fromInteger <$> unsafeParse (parseNumber `sepBy` ",")) $(getFile)
+fileContent :: Vector Int
+fileContent = fromList $ unsafeParse (parseNumber `sepBy` ",") $(getFile)
 
 -- * Generics
 
-run :: V.Vector Int -> Int
-run v = go v 0
+run :: Vector Int -> Int
+run = go 0
   where
-    go v pos = case (v V.! pos) of
+    go pos v = case v ! pos of
       1 -> let
-        a = v V.! (pos + 1)
-        b = v V.! (pos + 2)
-        newVal = v V.! a + v V.! b
-        pos' = v V.! (pos + 3)
-        in go (v V.// [(pos', newVal)]) (pos + 4)
+        a = v ! (pos + 1)
+        b = v ! (pos + 2)
+        newVal = v ! a + v ! b
+        pos' = v ! (pos + 3)
+        in go (pos + 4) (v // [(pos', newVal)])
       2 -> let
-        a = v V.! (pos + 1)
-        b = v V.! (pos + 2)
-        newVal = v V.! a * v V.! b
-        pos' = v V.! (pos + 3)
-        in go (v V.// [(pos', newVal)]) (pos + 4)
-      99 -> v V.! 0
+        a = v ! (pos + 1)
+        b = v ! (pos + 2)
+        newVal = v ! a * v ! b
+        pos' = v ! (pos + 3)
+        in go (pos + 4) (v // [(pos', newVal)])
+      99 -> v ! 0
 
+      i -> error $ [fmt|WTF in this computer, case unhandled {i}|]
 
 
 -- * FIRST problem
-day :: V.Vector Int -> Int
-day v = run (v V.// [(1, 12), (2, 2)])
+day :: Vector Int -> Int
+day v = run (v // [(1, 12), (2, 2)])
 
 -- first star: 15:40
 
 -- * SECOND problem
-day' :: V.Vector Int -> Int
+day' :: Vector Int -> Int
 day' v = unsafeHead $ do
     noun <- [0..99]
     verb <- [0..99]
 
-    let v' = v V.// [(1, noun), (2, verb)]
-        res = run v'
+    let res = run (v // [(1, noun), (2, verb)])
 
     guard $ res == 19690720
     pure (100 * noun + verb)

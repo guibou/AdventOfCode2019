@@ -1,6 +1,7 @@
 module Utils (
     module Utils
   , module Protolude
+  , module Protolude.Error
   , module Unsafe
   , HashMap
   , Vector
@@ -15,6 +16,7 @@ module Utils (
   , hereLit
   , chunksOf
   , genum, GEnum
+  , fmt -- From PyF
   ) where
 
 import Protolude
@@ -56,6 +58,9 @@ import Data.Function.Memoize
 import Test.Hspec
 import qualified Data.Text as Text
 import Data.String.Here
+import Protolude.Error
+
+import PyF
 
 -- So I can use it in the shell
 -- dayX <$$> content
@@ -208,11 +213,5 @@ cycleSucc o
 pow10 :: Int -> Int
 pow10 a = 10 ^ a
 
-parseNumber :: Integral t => Parser t
-parseNumber = L.signed sc (lexeme L.decimal)
-  {-
-  f <- Text.Megaparsec.option identity (char '-' $> negate)
-  d <- L.decimal
-
-  pure (fromIntegral $ f d)
--}
+parseNumber :: Num t => Parser t
+parseNumber = fromIntegral <$> ((L.signed sc (lexeme L.decimal)) :: Parser Integer)
