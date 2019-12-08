@@ -9,30 +9,11 @@ fileContent :: (Int, Int)
 fileContent = (356261, 846303)
 
 -- * Generics
-toDigits :: Int -> [Int]
-toDigits x = map (\d -> ord d - 48) (show x)
-
-isPassword x =
-  let digits = toDigits x
-
-  in checkTwoAdjacent digits && checkNonDecreasing digits
-
-isPassword' x =
-  let digits = toDigits x
-
-  in hasAGroupOfOnly2 digits && checkNonDecreasing digits
-
 checkTwoAdjacent [] = error "WTF2"
 checkTwoAdjacent [_] = False
 checkTwoAdjacent (x:y:xs)
   | x == y = True
   | otherwise = checkTwoAdjacent (y:xs)
-
-checkNonDecreasing [] = error "WTF"
-checkNonDecreasing [_] = True
-checkNonDecreasing (x:y:xs)
-  | x <= y = checkNonDecreasing (y:xs)
-  | otherwise = False
 
 -- first star at 17:53 because I do'nt know how to read
 
@@ -45,12 +26,25 @@ hasAGroupOfOnly2 digits = length (filter (==2) (Map.elems groups)) >= 1
 
 -- 356666 is too high
 -- * FIRST problem
-day :: _ -> Int
-day range = length $ filter isPassword [fst range..snd range]
+compute range p = length $ do
+  d0 <- [3 :: Int ..8]
+  d1 <- [d0..9]
+  d2 <- [d1..9]
+  d3 <- [d2..9]
+  d4 <- [d3..9]
+  d5 <- [d4..9]
+
+  let v = d5 + 10 * (d4 + 10 * (d3 + 10 * (d2 + 10 * (d1 + 10 * d0))))
+  guard $ v < snd range && v > fst range
+
+  guard $ p [d0, d1, d2, d3, d4, d5]
+  pure ()
+
+day range = compute range checkTwoAdjacent
 
 -- * SECOND problem
 day' :: _ -> Int
-day' range = length $ filter isPassword' [fst range..snd range]
+day' range = compute range hasAGroupOfOnly2
 
 -- * Tests
 
