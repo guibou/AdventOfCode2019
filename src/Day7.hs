@@ -8,6 +8,8 @@ import IntCode
 -- start: 10:47
 -- first star: 11:04 (missed the "each phase level can be used only once)
 -- pause at 11:09
+-- restart 13:17
+-- second star 13:22
 
 fileContent :: V.Vector Int
 fileContent = Day7.parse $(getFile)
@@ -49,11 +51,11 @@ day' code = maximum $ do
 
 -- MERCI LA NASA!
 computeThruster' code (a, b, c, d, e) =
-  let resA = readOutput $ runState (runIntCode' instructionSet_day5' code) (a:0:reverse resE, [])
-      resB = readOutput $ runState (runIntCode' instructionSet_day5' code) (b:reverse resA, [])
-      resC = readOutput $ runState (runIntCode' instructionSet_day5' code) (c:reverse resB, [])
-      resD = readOutput $ runState (runIntCode' instructionSet_day5' code) (d:reverse resC, [])
-      resE = readOutput $ runState (runIntCode' instructionSet_day5' code) (e:reverse resD, [])
+  let resA = runIntCodeOutput instructionSet_day5' code (a:0:resE)
+      resB = runIntCodeOutput instructionSet_day5' code (b:resA)
+      resC = runIntCodeOutput instructionSet_day5' code (c:resB)
+      resD = runIntCodeOutput instructionSet_day5' code (d:resC)
+      resE = runIntCodeOutput instructionSet_day5' code (e:resD)
 
   in unsafeLast resE
 

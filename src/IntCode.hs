@@ -32,6 +32,26 @@ runIntCode' instructionSet v'' = go (0,v'')
             Just pos'' -> go (pos'', v')
         Nothing -> error $ [fmt|WTF in this computer, case unhandled {v ! pos} {pos}|]
 
+runIntCodeOutput
+  :: Map Int ((Mode, Mode, Mode) -> Int -> Vector Int -> State ([Int], [Int]) (Maybe Int, Vector Int))
+  -> Vector Int
+  -- ^ The input machine
+  -> [Int]
+  -- ^ Input state
+  -> [Int]
+  -- ^ Output state
+runIntCodeOutput instructionSet v'' input = go (0,v'', input)
+  where
+    go (pos, v, input) = let
+      (instrNumber, modeA, modeB, modeC) = decodeMode (v ! pos)
+      in case Map.lookup instrNumber instructionSet of
+        Just instruction -> do
+          let ((pos', v'), (input', output)) = runState (instruction (modeA, modeB, modeC) pos v) (input, [])
+          case pos' of
+            Nothing -> output
+            Just pos'' -> output Utils.++ go (pos'', v', input')
+        Nothing -> error $ [fmt|WTF in this computer, case unhandled {v ! pos} {pos}|]
+
 -- Instructions
 
 instructionSet_1_2_99 :: Map Int ((Mode, Mode, Mode) -> Int -> Vector Int -> State ([Int], [Int]) (Maybe Int, Vector Int))
