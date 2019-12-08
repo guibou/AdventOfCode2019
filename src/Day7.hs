@@ -30,11 +30,11 @@ computeThruster code feedbackLoop (a, b, c, d, e) =
   let
     tailInputA = if feedbackLoop then resE else []
 
-    resA = runIntCodeOutput instructionSet_day5' code (a:0:tailInputA)
-    resB = runIntCodeOutput instructionSet_day5' code (b:resA)
-    resC = runIntCodeOutput instructionSet_day5' code (c:resB)
-    resD = runIntCodeOutput instructionSet_day5' code (d:resC)
-    resE = runIntCodeOutput instructionSet_day5' code (e:resD)
+    resA = runIntCodeOutput lastInstructionSet code (a:0:tailInputA)
+    resB = runIntCodeOutput lastInstructionSet code (b:resA)
+    resC = runIntCodeOutput lastInstructionSet code (c:resB)
+    resD = runIntCodeOutput lastInstructionSet code (d:resC)
+    resE = runIntCodeOutput lastInstructionSet code (e:resD)
   in unsafeLast resE
 
 

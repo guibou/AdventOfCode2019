@@ -8,8 +8,6 @@ import qualified Data.Map as Map
 -- I just finished IntCode from Day2. I feel this stuff will be used
 -- again, so time for cleaning, making it more generic
 
-readDiagnosticCode = Utils.unsafeHead . snd . snd
-
 runIntCode :: Vector Int -> Int
 runIntCode v = (fst $ runState (runIntCode' instructionSet_1_2_99 v) ([], [])) ! 0
 
@@ -32,6 +30,7 @@ runIntCode' instructionSet v'' = go (0,v'')
             Just pos'' -> go (pos'', v')
         Nothing -> error $ [fmt|WTF in this computer, case unhandled {v ! pos} {pos}|]
 
+-- | Similar as 'runIntCode'' however it only returns (lazyly) the output of the machine.
 runIntCodeOutput
   :: Map Int ((Mode, Mode, Mode) -> Int -> Vector Int -> State ([Int], [Int]) (Maybe Int, Vector Int))
   -> Vector Int
@@ -122,6 +121,7 @@ instructionSet_day5' = instructionSet_day5 <> Map.fromList [
   (8, instr8)
   ]
 
+lastInstructionSet = instructionSet_day5'
 
 instrAdd = instrBinop (+)
 instrMul = instrBinop (*)

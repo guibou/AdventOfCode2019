@@ -5,7 +5,7 @@ import Text.Megaparsec
 
 import IntCode
 
-import Data.Vector as Vector
+import qualified Data.Vector as Vector
 
 -- start: 18:03
 -- pause: 18:42
@@ -26,14 +26,14 @@ fileContent = Vector.fromList $ unsafeParse (parseNumber `sepBy` ",") $(getFile)
 
 -- * FIRST problem
 day :: _ -> Int
-day content = readDiagnosticCode $ runState (runIntCode' instructionSet_day5 content) ([1], [])
+day content = unsafeLast $ runIntCodeOutput instructionSet_day5 content [1]
 
 -- start for second star: 10:01
 -- second star: 10:10
 
 -- * SECOND problem
 day' :: _ -> Int
-day' content = readDiagnosticCode $ runState (runIntCode' instructionSet_day5' content) ([5], [])
+day' content = unsafeLast $ runIntCodeOutput instructionSet_day5' content [5]
 
 -- * Tests
 
