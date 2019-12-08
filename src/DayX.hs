@@ -2,8 +2,11 @@ module DayX where
 
 import Utils
 
-fileContent :: Text
-fileContent = $(getFile)
+fileContent :: _
+fileContent = parseContent $(getFile)
+
+parseContent :: Text -> _
+parseContent = _
 
 -- * Generics
 
