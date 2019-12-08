@@ -21,18 +21,19 @@ fileContent :: Vector Int
 fileContent = Vector.fromList $ unsafeParse (parseNumber `sepBy` ",") $(getFile)
 
 -- * Generics
-inputTest = [1]
 
 -- 1935 is too low.
 
 -- * FIRST problem
 day :: _ -> Int
-day content = Utils.unsafeHead $ snd $ snd $ runState (runIntCode' instructionSet_day5 content) (inputTest, [])
+day content = readDiagnosticCode $ runState (runIntCode' instructionSet_day5 content) ([1], [])
 
+-- start for second star: 10:01
+-- second star: 10:10
 
 -- * SECOND problem
 day' :: _ -> Int
-day' = undefined
+day' content = readDiagnosticCode $ runState (runIntCode' instructionSet_day5' content) ([5], [])
 
 -- * Tests
 
@@ -42,4 +43,4 @@ test = do
     it "on first star" $ do
       day fileContent `shouldBe` 15259545
     it "on second star" $ do
-      day' fileContent `shouldBe` 1238
+      day' fileContent `shouldBe` 7616021

@@ -8,6 +8,8 @@ import qualified Data.Map as Map
 -- I just finished IntCode from Day2. I feel this stuff will be used
 -- again, so time for cleaning, making it more generic
 
+readDiagnosticCode = Utils.unsafeHead . snd . snd
+
 runIntCode :: Vector Int -> Int
 runIntCode v = (fst $ runState (runIntCode' instructionSet_1_2_99 v) ([], [])) ! 0
 
@@ -59,6 +61,47 @@ instr4 (modeA, _, _) pos v = let
   in do
     writeOutput arg
     pure (Just $ pos + 2, v)
+
+instr5 (modeA, modeB, _) pos v = let
+  a = readMode modeA v (pos + 1)
+  b = readMode modeB v (pos + 2)
+
+  in
+  pure (Just $ if a /= 0 then b else pos + 3, v)
+
+instr6 (modeA, modeB, _) pos v = let
+  a = readMode modeA v (pos + 1)
+  b = readMode modeB v (pos + 2)
+
+  in
+  pure (Just $ if a == 0 then b else pos + 3, v)
+
+instr7 (modeA, modeB, Position) pos v = let
+  a = readMode modeA v (pos + 1)
+  b = readMode modeB v (pos + 2)
+  c = readMode Immediate v (pos + 3)
+
+  in
+  pure (Just $ pos + 4, v // [(c, if a < b then 1 else 0)])
+instr7 _ _ _ = error "instr7 used in immediate mode"
+
+instr8 (modeA, modeB, Position) pos v = let
+  a = readMode modeA v (pos + 1)
+  b = readMode modeB v (pos + 2)
+  c = readMode Immediate v (pos + 3)
+
+  in
+  pure (Just $ pos + 4, v // [(c, if a == b then 1 else 0)])
+instr8 _ _ _ = error "instr8 used in immediate mode"
+
+instructionSet_day5' :: Map Int ((Mode, Mode, Mode) -> Int -> Vector Int -> State ([Int], [Int]) (Maybe Int, Vector Int))
+instructionSet_day5' = instructionSet_day5 <> Map.fromList [
+  (5, instr5),
+  (6, instr6),
+  (7, instr7),
+  (8, instr8)
+  ]
+
 
 instrAdd = instrBinop (+)
 instrMul = instrBinop (*)
