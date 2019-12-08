@@ -5,39 +5,37 @@ import Utils
 import Data.Vector as V
 import qualified Data.Map as Map
 
+type Machine t = State ([Int], Int, Vector Int) t
+
 -- I just finished IntCode from Day2. I feel this stuff will be used
 -- again, so time for cleaning, making it more generic
-readIntCodeOutput instructions v = (fst $ fst $ runState (runIntCode instructions v) ([], [])) ! 0
+readIntCodeOutput instructions v = let
+  (_, (_, _, res)) = runState (runIntCode instructions) ([], 0, v)
+  in res ! 0
 
 -- | Run a generic IntCode machine, with instruction set defined by the first 'Map'
 runIntCode
-  :: Map Int ((Mode, Mode, Mode) -> Int -> Vector Int -> State ([Int], [Int]) (Maybe Int, Vector Int))
-  -> Vector Int
-  -- ^ The input machine
-  -> State ([Int], [Int]) (Vector Int, [Int])
+  :: Map Int ((Mode, Mode, Mode) -> Machine (Maybe [Int]))
+  -> Machine [Int]
   -- ^ Output machine
-runIntCode instructionSet v'' = go (0,v'')
+runIntCode instructionSet = go
   where
-    go (pos, v) = let
-      (instrNumber, modeA, modeB, modeC) = decodeMode (v ! pos)
-      in case Map.lookup instrNumber instructionSet of
+    go = do
+      (instrNumber, modes) <- decodeInstruction
+      case Map.lookup instrNumber instructionSet of
         Just instruction -> do
-          (pos', v') <- instruction (modeA, modeB, modeC) pos v
+          output <- instruction modes
 
-          -- clear output buffer
-          (input, output) <- get
-          put (input, [])
-
-          case pos' of
-            Nothing -> pure (v', output)
-            Just pos'' -> do
-              (v''', output') <- go (pos'', v')
-              pure (v''', output Utils.++ output')
-        Nothing -> error $ [fmt|WTF in this computer, case unhandled {v ! pos} {pos}|]
+          case output of
+            Nothing -> pure []
+            Just value -> do
+              values <- go
+              pure (value Utils.++ values)
+        Nothing -> error $ [fmt|WTF in this computer, case unhandled {instrNumber}|]
 
 -- | Similar as 'runIntCode'' however it only returns (lazyly) the output of the machine.
 runIntCodeOutput
-  :: Map Int ((Mode, Mode, Mode) -> Int -> Vector Int -> State ([Int], [Int]) (Maybe Int, Vector Int))
+  :: Map Int ((Mode, Mode, Mode) -> Machine (Maybe [Int]))
   -> Vector Int
   -- ^ The input machine
   -> [Int]
@@ -45,72 +43,91 @@ runIntCodeOutput
   -> [Int]
   -- ^ (Output state, final vector)
 runIntCodeOutput instructionSet v'' initialInput = let
-  ((_, res), (_, _)) = runState (runIntCode instructionSet v'') (initialInput, [])
+  (res, _) = runState (runIntCode instructionSet) (initialInput, 0, v'')
   in res
 
 -- Instructions
+decodeInstruction :: Machine (Int, (Mode, Mode, Mode))
+decodeInstruction = do
+  (_, pos, v) <- get
+  pure $ decodeMode (v ! pos)
 
-instructionSet_1_2_99 :: Map Int ((Mode, Mode, Mode) -> Int -> Vector Int -> State ([Int], [Int]) (Maybe Int, Vector Int))
+instructionSet_1_2_99 :: Map Int ((Mode, Mode, Mode) -> Machine (Maybe [Int]))
 instructionSet_1_2_99 = Map.fromList [(1, instrAdd), (2, instrMul), (99, instrHalt)]
 
-instructionSet_day5 :: Map Int ((Mode, Mode, Mode) -> Int -> Vector Int -> State ([Int], [Int]) (Maybe Int, Vector Int))
+instructionSet_day5 :: Map Int ((Mode, Mode, Mode) -> Machine (Maybe [Int]))
 instructionSet_day5 = Map.fromList [(1, instrAdd), (2, instrMul), (99, instrHalt), (3, instr3), (4, instr4)]
 
-instrBinop op (modeA, modeB, Position) pos v = let
-  a = readMode modeA v (pos + 1)
-  b = readMode modeB v (pos + 2)
-  newVal = a `op` b
-  pos' = readMode Immediate v (pos + 3) -- WRITE IS NEVER IN IMMEDIATE MODE
-  in pure (Just $ pos + 4, v // [(pos', newVal)])
-instrBinop _ _ _ _ = error "binop used with immediate mode for output"
+readMemory :: Mode -> Machine Int
+readMemory mode = do
+  (_, pc, v) <- get
+  modifyInstructionPointer (+1)
+  pure $ readMode mode v pc
 
-instr3 (Position, _, _) pos v = let
-  -- Save position are always position, never immedatie
-  savePos = readMode Immediate v (pos + 1)
-  in do
+readImmediate :: Machine Int
+readImmediate = do
+  (_, pc, v) <- get
+  modifyInstructionPointer (+1)
+  pure $ readMode Immediate v pc
+
+noReturn :: Machine () -> Machine (Maybe [Int])
+noReturn x = do
+  modifyInstructionPointer (+1)
+  x
+  pure $ Just []
+
+instrBinop op (modeA, modeB, Position) = noReturn $ do
+  a <- readMemory modeA
+  b <- readMemory modeB
+  pos' <- readImmediate
+
+  alterMemory [(pos', a `op` b)]
+
+instrBinop _ _ = error "binop used with immediate mode for output"
+
+instr3 (Position, _, _) = noReturn $ do
+    savePos <- readImmediate
     i <- readInput
-    pure (Just $ pos + 2, v // [(savePos, i)])
-instr3 _ _ _ = error "instr3 used in immediate mode"
+    alterMemory [(savePos, i)]
 
-instr4 (modeA, _, _) pos v = let
-  arg = readMode modeA v (pos + 1)
-  in do
-    writeOutput arg
-    pure (Just $ pos + 2, v)
+instr3 _ = error "instr3 used in immediate mode"
 
-instr5 (modeA, modeB, _) pos v = let
-  a = readMode modeA v (pos + 1)
-  b = readMode modeB v (pos + 2)
+instr4 (modeA, _, _) = do
+  modifyInstructionPointer (+1)
+  arg <- readMemory modeA
 
-  in
-  pure (Just $ if a /= 0 then b else pos + 3, v)
+  pure (Just [arg])
 
-instr6 (modeA, modeB, _) pos v = let
-  a = readMode modeA v (pos + 1)
-  b = readMode modeB v (pos + 2)
+instr5 (modeA, modeB, _) = noReturn $ do
+  a <- readMemory modeA
+  b <- readMemory modeB
 
-  in
-  pure (Just $ if a == 0 then b else pos + 3, v)
+  modifyInstructionPointer $ if a /= 0 then const b else identity
 
-instr7 (modeA, modeB, Position) pos v = let
-  a = readMode modeA v (pos + 1)
-  b = readMode modeB v (pos + 2)
-  c = readMode Immediate v (pos + 3)
+instr6 (modeA, modeB, _) = noReturn $ do
+  a <- readMemory modeA
+  b <- readMemory modeB
 
-  in
-  pure (Just $ pos + 4, v // [(c, if a < b then 1 else 0)])
-instr7 _ _ _ = error "instr7 used in immediate mode"
+  modifyInstructionPointer $ if a == 0 then const b else identity
 
-instr8 (modeA, modeB, Position) pos v = let
-  a = readMode modeA v (pos + 1)
-  b = readMode modeB v (pos + 2)
-  c = readMode Immediate v (pos + 3)
+instr7 (modeA, modeB, Position) = noReturn $ do
+  a <- readMemory modeA
+  b <- readMemory modeB
+  c <- readImmediate
 
-  in
-  pure (Just $ pos + 4, v // [(c, if a == b then 1 else 0)])
-instr8 _ _ _ = error "instr8 used in immediate mode"
+  alterMemory [(c, if a < b then 1 else 0)]
 
-instructionSet_day5' :: Map Int ((Mode, Mode, Mode) -> Int -> Vector Int -> State ([Int], [Int]) (Maybe Int, Vector Int))
+instr7 _ = error "instr7 used in immediate mode"
+
+instr8 (modeA, modeB, Position) = noReturn $ do
+  a <- readMemory modeA
+  b <- readMemory modeB
+  c <- readImmediate
+
+  alterMemory [(c, if a == b then 1 else 0)]
+instr8 _ = error "instr8 used in immediate mode"
+
+instructionSet_day5' :: Map Int ((Mode, Mode, Mode) -> Machine (Maybe [Int]))
 instructionSet_day5' = instructionSet_day5 <> Map.fromList [
   (5, instr5),
   (6, instr6),
@@ -122,25 +139,37 @@ lastInstructionSet = instructionSet_day5'
 
 instrAdd = instrBinop (+)
 instrMul = instrBinop (*)
-instrHalt _ _ v = pure (Nothing, v)
+instrHalt _ = pure Nothing
 
-readInput :: State ([Int], [Int]) Int
+-- * Machine instructions
+
+readInput :: Machine Int
 readInput = do
   -- non exhaustive pattern synonym, we suppose that we have enough input
-  ~((x:input), output) <- get
-  put (input, output)
-  pure x
+  (input, pc, memory) <- get
+  case input of
+    (x:xs) -> do
+      put (xs, pc, memory)
+      pure x
+    _ -> error "No enough input"
 
-writeOutput :: Int -> State ([Int], [Int]) ()
-writeOutput x = do
-  (input, output) <- get
-  put (input, x:output)
+modifyInstructionPointer :: (Int -> Int) -> Machine ()
+modifyInstructionPointer f = do
+  (input, pc, memory) <- get
+  put (input, f pc, memory)
+
+alterMemory :: [(Int, Int)] -> Machine ()
+alterMemory changes = do
+  (input, pc, memory) <- get
+  put (input, pc, memory // changes)
+
+-- * modes
 
 data Mode = Position | Immediate
   deriving (Show, Eq)
 
-decodeMode :: Int -> (Int, Mode, Mode, Mode)
-decodeMode v = (v `mod` 100, modeAt v 100, modeAt v 1000, modeAt v 10000)
+decodeMode :: Int -> (Int, (Mode, Mode, Mode))
+decodeMode v = (v `mod` 100, (modeAt v 100, modeAt v 1000, modeAt v 10000))
 
 modeAt v x = if (v `div` x) `mod` 10 == 0 then Position else Immediate
 
@@ -152,10 +181,10 @@ test :: Spec
 test = do
   describe "decodeMode" $ do
     it "works for full setup" $ do
-      decodeMode 11123 `shouldBe` (23, Immediate, Immediate, Immediate)
-      decodeMode 10124 `shouldBe` (24, Immediate, Position, Immediate)
-      decodeMode 01125 `shouldBe` (25, Immediate, Immediate, Position)
+      decodeMode 11123 `shouldBe` (23, (Immediate, Immediate, Immediate))
+      decodeMode 10124 `shouldBe` (24, (Immediate, Position, Immediate))
+      decodeMode 01125 `shouldBe` (25, (Immediate, Immediate, Position))
     it "works for partial setup" $ do
-      decodeMode 22 `shouldBe` (22, Position, Position, Position)
-      decodeMode 123 `shouldBe` (23, Immediate, Position, Position)
-      decodeMode 1124 `shouldBe` (24, Immediate, Immediate, Position)
+      decodeMode 22 `shouldBe` (22, (Position, Position, Position))
+      decodeMode 123 `shouldBe` (23, (Immediate, Position, Position))
+      decodeMode 1124 `shouldBe` (24, (Immediate, Immediate, Position))
