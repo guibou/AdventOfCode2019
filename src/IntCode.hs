@@ -39,7 +39,7 @@ runIntCodeOutput
   -- ^ Input state
   -> [Int]
   -- ^ Output state
-runIntCodeOutput instructionSet v'' input = go (0,v'', input)
+runIntCodeOutput instructionSet v'' initialInput = go (0,v'', initialInput)
   where
     go (pos, v, input) = let
       (instrNumber, modeA, modeB, modeC) = decodeMode (v ! pos)

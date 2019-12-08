@@ -16,7 +16,7 @@ move = (,) <$> parseUDLR <*> parseNumber
 
 fileContent :: ([(Direction, Int)], [(Direction, Int)])
 fileContent = let
-  [l0, l1] = Text.lines $(getFile)
+  (l0, Text.drop 1 -> l1) = Text.breakOn "\n" $(getFile)
   in (unsafeParse (move `sepBy` ",") l0, unsafeParse (move `sepBy` ",") l1)
 
 -- * Generics
@@ -45,10 +45,9 @@ day' (path0, path1) =
 
       intersections = Set.delete (0, 0) (Set.intersection (Map.keysSet position0) (Map.keysSet position1))
 
-      f it = let
-        Just steps0 = Map.lookup it position0
-        Just steps1 = Map.lookup it position1
-        in (steps0 + steps1)
+      f intersection = case (,) <$> Map.lookup intersection position0 <*> Map.lookup intersection position1 of
+        Just (steps0, steps1) -> steps0 + steps1
+        Nothing -> error "Intersection not found"
   in minimum (map f (Set.toList intersections))
 
 -- second start: 17:01
