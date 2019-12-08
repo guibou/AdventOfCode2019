@@ -7,27 +7,32 @@ import qualified Data.Map as Map
 
 -- I just finished IntCode from Day2. I feel this stuff will be used
 -- again, so time for cleaning, making it more generic
-
-runIntCode :: Vector Int -> Int
-runIntCode v = (fst $ runState (runIntCode' instructionSet_1_2_99 v) ([], [])) ! 0
+readIntCodeOutput instructions v = (fst $ fst $ runState (runIntCode instructions v) ([], [])) ! 0
 
 -- | Run a generic IntCode machine, with instruction set defined by the first 'Map'
-runIntCode'
+runIntCode
   :: Map Int ((Mode, Mode, Mode) -> Int -> Vector Int -> State ([Int], [Int]) (Maybe Int, Vector Int))
   -> Vector Int
   -- ^ The input machine
-  -> State ([Int], [Int]) (Vector Int)
+  -> State ([Int], [Int]) (Vector Int, [Int])
   -- ^ Output machine
-runIntCode' instructionSet v'' = go (0,v'')
+runIntCode instructionSet v'' = go (0,v'')
   where
     go (pos, v) = let
       (instrNumber, modeA, modeB, modeC) = decodeMode (v ! pos)
       in case Map.lookup instrNumber instructionSet of
         Just instruction -> do
           (pos', v') <- instruction (modeA, modeB, modeC) pos v
+
+          -- clear output buffer
+          (input, output) <- get
+          put (input, [])
+
           case pos' of
-            Nothing -> pure v'
-            Just pos'' -> go (pos'', v')
+            Nothing -> pure (v', output)
+            Just pos'' -> do
+              (v''', output') <- go (pos'', v')
+              pure (v''', output Utils.++ output')
         Nothing -> error $ [fmt|WTF in this computer, case unhandled {v ! pos} {pos}|]
 
 -- | Similar as 'runIntCode'' however it only returns (lazyly) the output of the machine.
@@ -38,18 +43,10 @@ runIntCodeOutput
   -> [Int]
   -- ^ Input state
   -> [Int]
-  -- ^ Output state
-runIntCodeOutput instructionSet v'' initialInput = go (0,v'', initialInput)
-  where
-    go (pos, v, input) = let
-      (instrNumber, modeA, modeB, modeC) = decodeMode (v ! pos)
-      in case Map.lookup instrNumber instructionSet of
-        Just instruction -> do
-          let ((pos', v'), (input', output)) = runState (instruction (modeA, modeB, modeC) pos v) (input, [])
-          case pos' of
-            Nothing -> output
-            Just pos'' -> output Utils.++ go (pos'', v', input')
-        Nothing -> error $ [fmt|WTF in this computer, case unhandled {v ! pos} {pos}|]
+  -- ^ (Output state, final vector)
+runIntCodeOutput instructionSet v'' initialInput = let
+  ((_, res), (_, _)) = runState (runIntCode instructionSet v'') (initialInput, [])
+  in res
 
 -- Instructions
 
