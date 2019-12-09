@@ -1,19 +1,12 @@
-module IntCode (
-  readIntCodeOutput,
-  runIntCodeOutput,
-  instructionSet_day9
-  , instructionSet_day5'
-  , instructionSet_day5
-  , instructionSet_1_2_99
-  , lastInstructionSet
-               ) where
+module IntCode where
 
 import Utils
 
 import Data.Vector as V
 import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as HashMap
 
-type Machine intType t = State ([intType], Int, Vector intType, Int) t
+type Machine intType t = State ([intType], Int, HashMap Int intType, Int) t
 
 {-# SPECIALIZE readIntCodeOutput ::Map Int ((Mode, Mode, Mode) -> Machine Int (Maybe [Int])) -> Vector Int -> Int #-}
 
@@ -21,8 +14,8 @@ type Machine intType t = State ([intType], Int, Vector intType, Int) t
 -- again, so time for cleaning, making it more generic
 readIntCodeOutput :: Integral t => Map Int ((Mode, Mode, Mode) -> Machine t (Maybe [t])) -> Vector t -> t
 readIntCodeOutput instructions v = let
-  (_, (_, _, res, _)) = runState (runIntCode instructions) ([], 0, v, 0)
-  in res ! 0
+  (_, (_, _, res, _)) = runState (runIntCode instructions) ([], 0, HashMap.fromList (Utils.zip [0..] (V.toList v)), 0)
+  in res HashMap.! 0
 
 {-# SPECIALIZE runIntCode :: Map Int ((Mode, Mode, Mode) -> Machine Int (Maybe [Int])) -> Machine Int [Int] #-}
   -- ^ Output machine
@@ -58,7 +51,7 @@ runIntCodeOutput
   -> [t]
   -- ^ (Output state, final vector)
 runIntCodeOutput instructionSet v'' initialInput = let
-  (res, _) = runState (runIntCode instructionSet) (initialInput, 0, v'', 0)
+  (res, _) = runState (runIntCode instructionSet) (initialInput, 0, HashMap.fromList (Utils.zip [0..] (V.toList v'')), 0)
   in res
 
 {-# SPECIALIZE decodeInstruction :: Machine Int (Int, (Mode, Mode, Mode)) #-}
@@ -67,7 +60,7 @@ runIntCodeOutput instructionSet v'' initialInput = let
 decodeInstruction :: Integral t => Machine t (Int, (Mode, Mode, Mode))
 decodeInstruction = do
   (_, pos, v, _) <- get
-  pure $ decodeMode (fromIntegral (v ! pos))
+  pure $ decodeMode (fromIntegral (v HashMap.! pos))
 
 instructionSet_1_2_99 :: Integral t => Map Int ((Mode, Mode, Mode) -> Machine t (Maybe [t]))
 instructionSet_1_2_99 = Map.fromList [(1, instrAdd), (2, instrMul), (99, instrHalt)]
@@ -208,15 +201,10 @@ modifyInstructionPointer f = do
   put (input, f pc, memory, relBase)
 
 alterMemory :: Integral t => (Int, t) -> Machine t ()
-alterMemory change@(offset, _) = do
+alterMemory (offset, val) = do
   (input, pc, memory, relBase) <- get
 
-  let
-    memory'
-      | offset < V.length memory = memory
-      | otherwise = memory <> V.replicate (offset - V.length memory + 1) 0
-
-  put (input, pc, memory' // [change], relBase)
+  put (input, pc, HashMap.insert offset val memory, relBase)
 
 -- * modes
 
@@ -235,16 +223,16 @@ modeAt v x = case (v `div` x) `mod` 10 of
   1 -> Immediate
   2 -> Position Relative
 
-{-# SPECIALIZE readMode :: Int -> Mode -> Vector Int -> Int -> Int #-}
+{-# SPECIALIZE readMode :: Int -> Mode -> HashMap Int Int -> Int -> Int #-}
 
-readMode :: Integral t => Int -> Mode -> Vector t -> Int -> t
+readMode :: Integral t => Int -> Mode -> HashMap Int t -> Int -> t
 readMode _ Immediate v offset = v `readSafe` offset
 readMode _ (Position Absolute) v offset = v `readSafe` fromIntegral (v `readSafe` offset)
 readMode relativeBase (Position Relative) v offset = v `readSafe` (fromIntegral (v `readSafe` offset) + relativeBase)
 
-readSafe v offset
-  | offset < V.length v = v ! offset
-  | otherwise = 0
+readSafe v offset = case HashMap.lookup offset v of
+  Just res -> res
+  Nothing -> 0
 
 test :: Spec
 test = do
