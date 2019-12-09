@@ -21,7 +21,7 @@ type Machine intType t = State ([intType], Int, Vector intType, Int) t
 -- again, so time for cleaning, making it more generic
 readIntCodeOutput :: Integral t => Map Int ((Mode, Mode, Mode) -> Machine t (Maybe [t])) -> Vector t -> t
 readIntCodeOutput instructions v = let
-  (_, (_, _, res, _)) = runState (runIntCode instructions) ([], 0, v <> V.replicate 10000 0, 0)
+  (_, (_, _, res, _)) = runState (runIntCode instructions) ([], 0, v, 0)
   in res ! 0
 
 {-# SPECIALIZE runIntCode :: Map Int ((Mode, Mode, Mode) -> Machine Int (Maybe [Int])) -> Machine Int [Int] #-}
@@ -58,7 +58,7 @@ runIntCodeOutput
   -> [t]
   -- ^ (Output state, final vector)
 runIntCodeOutput instructionSet v'' initialInput = let
-  (res, _) = runState (runIntCode instructionSet) (initialInput, 0, v'' <> V.replicate 10000 0, 0)
+  (res, _) = runState (runIntCode instructionSet) (initialInput, 0, v'', 0)
   in res
 
 {-# SPECIALIZE decodeInstruction :: Machine Int (Int, (Mode, Mode, Mode)) #-}
@@ -107,14 +107,14 @@ instrBinop op (modeA, modeB, Position rel) = noReturn $ do
   b <- readMemory modeB
   pos' <- readImmediate rel
 
-  alterMemory [(fromIntegral pos', a `op` b)]
+  alterMemory (fromIntegral pos', a `op` b)
 
 instrBinop _ _ = error "binop used with immediate mode for output"
 
 instr3 (Position rel, _, _) = noReturn $ do
     savePos <- readImmediate rel
     i <- readInput
-    alterMemory [(fromIntegral savePos, i)]
+    alterMemory (fromIntegral savePos, i)
 
 instr3 _ = error "instr3 used in immediate mode"
 
@@ -141,7 +141,7 @@ instr7 (modeA, modeB, Position rel) = noReturn $ do
   b <- readMemory modeB
   c <- readImmediate rel
 
-  alterMemory [(fromIntegral c, if a < b then 1 else 0)]
+  alterMemory (fromIntegral c, if a < b then 1 else 0)
 
 instr7 _ = error "instr7 used in immediate mode"
 
@@ -150,7 +150,7 @@ instr8 (modeA, modeB, Position rel) = noReturn $ do
   b <- readMemory modeB
   c <- readImmediate rel
 
-  alterMemory [(fromIntegral c, if a == b then 1 else 0)]
+  alterMemory (fromIntegral c, if a == b then 1 else 0)
 instr8 _ = error "instr8 used in immediate mode"
 
 instr9 (modeA, _, _) = noReturn $ do
@@ -207,10 +207,16 @@ modifyInstructionPointer f = do
   (input, pc, memory, relBase) <- get
   put (input, f pc, memory, relBase)
 
-alterMemory :: [(Int, t)] -> Machine t ()
-alterMemory changes = do
+alterMemory :: Integral t => (Int, t) -> Machine t ()
+alterMemory change@(offset, _) = do
   (input, pc, memory, relBase) <- get
-  put (input, pc, memory // changes, relBase)
+
+  let
+    memory'
+      | offset < V.length memory = memory
+      | otherwise = memory <> V.replicate (offset - V.length memory + 1) 0
+
+  put (input, pc, memory' // [change], relBase)
 
 -- * modes
 
@@ -232,9 +238,13 @@ modeAt v x = case (v `div` x) `mod` 10 of
 {-# SPECIALIZE readMode :: Int -> Mode -> Vector Int -> Int -> Int #-}
 
 readMode :: Integral t => Int -> Mode -> Vector t -> Int -> t
-readMode _ Immediate v offset = v ! offset
-readMode _ (Position Absolute) v offset = v ! fromIntegral (v ! offset)
-readMode relativeBase (Position Relative) v offset = v ! (fromIntegral (v ! offset) + relativeBase)
+readMode _ Immediate v offset = v `readSafe` offset
+readMode _ (Position Absolute) v offset = v `readSafe` fromIntegral (v `readSafe` offset)
+readMode relativeBase (Position Relative) v offset = v `readSafe` (fromIntegral (v `readSafe` offset) + relativeBase)
+
+readSafe v offset
+  | offset < V.length v = v ! offset
+  | otherwise = 0
 
 test :: Spec
 test = do
