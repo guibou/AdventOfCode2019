@@ -3,6 +3,8 @@ module All where
 import Utils
 import qualified Data.Text as Text
 
+import Weigh
+
 import Day1
 import Day2
 import Day3
@@ -23,3 +25,4 @@ tests = hspec $ mapM_ (\(name, s) -> describe name s) $ allDays
 tests' = mapM_ (\(name, s) -> hspec $ describe name s) $ allDays
 
 -- Test all samples and return a timing for each
+testsWeigh = mapM_ (\(name, s) -> mainWith $ action "foo" $ hspec $ describe name s) allDays

@@ -44,7 +44,8 @@ library
                        pqueue,
                        random,
                        sbv,
-                       PyF
+                       PyF,
+                       weigh
 
   default-extensions: TupleSections
                     , DeriveAnyClass
