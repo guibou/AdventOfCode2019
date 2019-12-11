@@ -222,6 +222,7 @@ modeAt v x = case (v `div` x) `mod` 10 of
   0 -> Position Absolute
   1 -> Immediate
   2 -> Position Relative
+  _ -> error "WTF non exhaustive mode"
 
 {-# SPECIALIZE readMode :: Int -> Mode -> HashMap Int Int -> Int -> Int #-}
 

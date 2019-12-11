@@ -15,6 +15,7 @@ import Day7
 import Day8
 import Day9
 import Day10
+import Day11
 
 allDays = sortBy (comparing (unsafeRead @Int . Text.pack . drop 3 . fst)) $(thisModuleName)
 

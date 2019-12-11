@@ -193,6 +193,19 @@ display2DGrid g =
         Just v -> putStr v
     putStrLn ("" :: Text)
 
+str2DGrid :: Map (Int, Int) Text -> Text
+str2DGrid g =
+  let ((minX, minY), (maxX, maxY)) = getBounds g
+  in
+  Text.intercalate "\n" $ flip map [minY .. maxY] $ \y -> do
+    Text.stripEnd $ Text.intercalate "" $ flip map [minX .. maxX] $ \x -> do
+      case Map.lookup (x, y) g of
+        Nothing -> " "
+        Just v -> v
+
+flipImage :: Text -> Text
+flipImage = Text.unlines . reverse . Text.lines
+
 -- * Tests Utile
 thisModuleName :: Q Exp
 thisModuleName = do
