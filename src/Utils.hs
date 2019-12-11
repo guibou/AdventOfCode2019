@@ -188,7 +188,9 @@ display2DGrid g =
   in
   for_ [minY .. maxY] $ \y -> do
     for_ [minX .. maxX] $ \x -> do
-      putStr $ (Map.!) g (x, y)
+      case Map.lookup (x, y) g of
+        Nothing -> putStr (" " :: Text)
+        Just v -> putStr v
     putStrLn ("" :: Text)
 
 -- * Tests Utile
