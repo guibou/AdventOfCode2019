@@ -1,4 +1,4 @@
-module Day2 where
+module Day02 where
 
 import Utils
 import Text.Megaparsec

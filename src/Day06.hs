@@ -1,4 +1,4 @@
-module Day6 where
+module Day06 where
 
 import Utils
 import qualified Data.Text as Text

@@ -1,23 +1,22 @@
 module All where
 
 import Utils
-import qualified Data.Text as Text
 
 import Weigh
 
-import Day1
-import Day2
-import Day3
-import Day4
-import Day5
-import Day6
-import Day7
-import Day8
-import Day9
+import Day01
+import Day02
+import Day03
+import Day04
+import Day05
+import Day06
+import Day07
+import Day08
+import Day09
 import Day10
 import Day11
 
-allDays = sortBy (comparing (unsafeRead @Int . Text.pack . drop 3 . fst)) $(thisModuleName)
+allDays = sortBy (comparing fst) $(thisModuleName)
 
 -- Test all samples and return a timing for all
 tests = hspec $ mapM_ (\(name, s) -> describe name s) $ allDays
