@@ -1,0 +1,64 @@
+module Day16 where
+
+import Utils hiding (phase)
+import qualified Data.Text as Text
+import qualified Data.Vector as V
+
+-- start: 12:12
+-- first: 12:17
+
+fileContent :: _
+fileContent = parseContent $(getFile)
+
+parseContent :: Text -> [Int]
+parseContent = map (\x -> unsafeRead (Text.pack [x])) . Text.unpack
+
+-- * Generics
+basePattern = [0 :: Int, 1, 0, -1]
+
+pat n = drop 1 $ cycle $ concat $ (map (mconcat . replicate n) $ transpose [basePattern])
+
+phase offset input = do
+  n <- [1.. length input]
+  pure $! (`mod`10) $ abs $ sum $ zipWith (*) input (drop offset (pat n))
+
+applyN' :: NFData a => Int -> (a -> a) -> a -> a
+applyN' n f s = go 0 s
+  where
+    go !n' v
+      | n == n' = v
+      | otherwise = go (n' + 1) $!! (f $!! v)
+
+-- * FIRST problem
+day :: [Int] -> Int
+day ints = toInt $ take 8 $ applyN' 100 (phase 0) ints
+
+-- * SECOND problem
+day' :: _ -> _
+day' ints = let
+  offset = toInt $ take 7 ints
+
+  res = applyN' 100 (phase 0) (mconcat $ replicate 10000 ints)
+  in toInt $ take 8 $ drop offset res
+
+-- Too high: 96324612
+
+ex0' = parseContent "03036732577212944063491565474664"
+
+toInt :: [Int] -> Int
+toInt (traceShowId->l) = unsafeRead $ mconcat $ map (\x -> show x) l
+
+-- * Tests
+
+-- test :: Spec
+-- test = do
+--   describe "simple examples" $ do
+--     it "of first star" $ do
+--       day "" `shouldBe` 0
+--     it "of second star" $ do
+--       day' "" `shouldBe` 0
+--   describe "works" $ do
+--     it "on first star" $ do
+--       day fileContent `shouldBe` 1228
+--     it "on second star" $ do
+--       day' fileContent `shouldBe` 1238
