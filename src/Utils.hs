@@ -230,3 +230,12 @@ pow10 a = 10 ^ a
 
 parseNumber :: Num t => Parser t
 parseNumber = fromIntegral <$> ((L.signed sc (lexeme L.decimal)) :: Parser Integer)
+
+bisect p bounds = uncurry go bounds
+  where
+    go a b
+      | a + 1 == b = (a, b)
+      | p mid = go mid b
+      | otherwise = go a mid
+      where
+        mid = (a + b) `div` 2
