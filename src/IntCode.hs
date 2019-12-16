@@ -5,6 +5,7 @@ import Utils
 import Data.Vector as V
 import qualified Data.Map as Map
 import qualified Data.HashMap.Strict as HashMap
+import qualified Text.Megaparsec as P
 
 type Machine intType t = State ([intType], Int, HashMap Int intType, Int) t
 
@@ -246,3 +247,6 @@ test = do
       decodeMode 22 `shouldBe` (22, (Position Absolute, Position Absolute, Position Absolute))
       decodeMode 123 `shouldBe` (23, (Immediate, Position Absolute, Position Absolute))
       decodeMode 1124 `shouldBe` (24, (Immediate, Immediate, Position Absolute))
+
+parseIntCode :: Integral t => Text -> V.Vector t
+parseIntCode = V.fromList . unsafeParse (parseNumber `P.sepBy` ",")

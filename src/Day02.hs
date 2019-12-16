@@ -1,7 +1,6 @@
 module Day02 where
 
 import Utils
-import Text.Megaparsec
 import Data.Vector hiding (unsafeHead)
 
 import IntCode
@@ -9,7 +8,7 @@ import IntCode
 -- start 15:30
 
 fileContent :: Vector Int
-fileContent = fromList $ unsafeParse (parseNumber `sepBy` ",") $(getFile)
+fileContent = parseIntCode $(getFile)
 
 -- * Generics
 

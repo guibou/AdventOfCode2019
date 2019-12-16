@@ -15,6 +15,9 @@ import Day08
 import Day09
 import Day10
 import Day11
+import Day12 -- Not full
+import Day13 -- Not full
+import Day14
 
 allDays = sortBy (comparing fst) $(thisModuleName)
 

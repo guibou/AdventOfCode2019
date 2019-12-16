@@ -1,11 +1,8 @@
 module Day05 where
 
 import Utils
-import Text.Megaparsec
 
 import IntCode
-
-import qualified Data.Vector as Vector
 
 -- start: 18:03
 -- pause: 18:42
@@ -18,7 +15,7 @@ import qualified Data.Vector as Vector
 -- pause before first star
 
 fileContent :: Vector Int
-fileContent = Vector.fromList $ unsafeParse (parseNumber `sepBy` ",") $(getFile)
+fileContent = parseIntCode $(getFile)
 
 -- * Generics
 

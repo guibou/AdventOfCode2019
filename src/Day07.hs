@@ -1,7 +1,6 @@
 module Day07 where
 
 import Utils
-import Text.Megaparsec
 import qualified Data.Vector as V
 import IntCode
 
@@ -14,7 +13,7 @@ import IntCode
 fileContent :: V.Vector Int
 fileContent = parseContent $(getFile)
 
-parseContent = V.fromList . unsafeParse (parseNumber `sepBy` ",")
+parseContent = parseIntCode
 
 -- * Generics
 

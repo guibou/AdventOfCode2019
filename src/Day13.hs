@@ -13,10 +13,7 @@ import qualified Data.Vector as Vector
 import System.Console.ANSI
 
 fileContent :: Vector.Vector Int
-fileContent = parseContent $(getFile)
-
-parseContent :: Text -> Vector.Vector Int
-parseContent = Vector.fromList . unsafeParse (parseNumber `sepBy` ",")
+fileContent = parseIntCode $(getFile)
 
 -- * Generics
 -- * FIRST problem
