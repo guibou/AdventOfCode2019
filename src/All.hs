@@ -20,6 +20,7 @@ import Day13 -- Not full
 import Day14
 import Day15
 import Day16 -- star 2 is not tested because too slow right now
+import Day17
 
 allDays = sortBy (comparing fst) $(thisModuleName)
 

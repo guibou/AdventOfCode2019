@@ -6,7 +6,7 @@ import Text.Megaparsec
 -- This module helps parsing working with directions on a 2D grid
 
 data Direction = North | East | South | West
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 pattern U, D, L, R :: Direction
 pattern U = North
