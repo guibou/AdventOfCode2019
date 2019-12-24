@@ -4,6 +4,7 @@ module Path
 where
 
 import Protolude
+import Utils
 
 import qualified Data.Map as Map
 import Data.Map (Map)
@@ -41,10 +42,10 @@ dijkstra getNext combineWeight start end = go (Queue.singleton 0 start) Map.empt
               -- update queue
               queue'' = foldl' (\acc (k, a) -> Queue.insert k a acc) queue' nextPriority
               -- update prevs
-              upPrevs = Map.fromList (map (\(w, v) -> (v, (w, currentPoint))) nextPriority)
+              upPrevs = Map.fromList (map (\(weight, v) -> (v, (weight, currentPoint))) nextPriority)
 
-              fUnion p0@(w, _) p1@(w', _)
-                | w <= w' = p0
+              fUnion p0@(weight, _) p1@(weight', _)
+                | weight <= weight' = p0
                 | otherwise = p1
               in go queue'' (Map.unionWith fUnion prevs upPrevs) (Set.insert currentPoint done)
 
@@ -74,5 +75,5 @@ buildPath start end d
     where
       go current acc
         | current == start = acc
-        | otherwise = let Just (_, prev) = Map.lookup current d
-                      in go prev (current:acc)
+        | Just (_, prev) <- Map.lookup current d = go prev (current:acc)
+        | otherwise = error "WTF buildPath"
