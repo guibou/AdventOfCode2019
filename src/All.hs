@@ -21,6 +21,7 @@ import Day14
 import Day15
 import Day16 -- star 2 is not tested because too slow right now
 import Day17
+-- import Day18 -- Super slow
 
 allDays = sortBy (comparing fst) $(thisModuleName)
 
