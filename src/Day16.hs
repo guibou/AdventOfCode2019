@@ -70,7 +70,7 @@ day' ints = let
 ex0' = parseContent "03036732577212944063491565474664"
 
 toInt :: [Int] -> Int
-toInt (traceShowId->l) = unsafeRead $ mconcat $ map (\x -> show x) l
+toInt l = unsafeRead $ mconcat $ map (\x -> show x) l
 
 -- * Tests
 
