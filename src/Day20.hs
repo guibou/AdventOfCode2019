@@ -116,7 +116,7 @@ day' (walls, waypoints, start, end, ((minX, minY),(maxX, maxY))) = fst $ unsafeF
            then if level > 0
              then Just (p', level - 1)
              else Nothing
-           -- WTF: my dijkstra is not terminating on the final value, it needs to evaluate everything
+           -- WTF: hadoc hack, to limit the depth down the map.
            else if level < 30
               then Just (p', level + 1)
               else Nothing

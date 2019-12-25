@@ -30,12 +30,11 @@ dijkstra getNext combineWeight start end = go (Queue.singleton 0 start) HashMap.
     go queue prevs done =
       case Queue.minViewWithKey queue of
         Nothing -> prevs
-        Just ((w, currentPoint), queue') ->
-          if currentPoint `Set.member` done
-            then if currentPoint == end
-                 then prevs
-                 else go queue' prevs done
-            else let
+        Just ((w, currentPoint), queue')
+          | currentPoint == end -> prevs
+          | currentPoint `Set.member` done -> go queue' prevs done
+          | otherwise ->
+            let
               nexts = getNext currentPoint
               nextPriority = map (\(w', v) -> (w' `combineWeight` w, v)) nexts
 
