@@ -44,7 +44,8 @@ runIntCode instructionSet = go
 
 -- | Similar as 'runIntCode'' however it only returns (lazyly) the output of the machine.
 runIntCodeOutput
-  :: Integral t => Map Int ((Mode, Mode, Mode) -> Machine t (Maybe [t]))
+  :: Integral t
+  => Map Int ((Mode, Mode, Mode) -> Machine t (Maybe [t]))
   -> Vector t
   -- ^ The input machine
   -> [t]
