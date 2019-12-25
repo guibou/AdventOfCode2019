@@ -48,7 +48,7 @@ applyN' :: NFData a => Int -> (a -> a) -> a -> a
 applyN' n f s = go 0 s
   where
     go !n' v
-      | n == traceShowId n' = v
+      | n == n' = v
       | otherwise = go (n' + 1) $!! (f $!! v)
 
 -- * FIRST problem
