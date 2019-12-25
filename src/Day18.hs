@@ -9,7 +9,6 @@ import Data.Char (isLower, isUpper, toLower)
 import qualified Data.Text as Text
 import Direction
 import Path
-import Data.List (partition)
 
 -- start: 15:04
 -- pause: 16:51
@@ -41,7 +40,7 @@ buildGraph (walls,keys,doors,start) = HashMap.fromListWith (HashMap.union) $ do
   ((kPos, k), ks) <- select (start: HashMap.toList keys)
 
   (k'Pos, k') <- ks
-  guard $ k > k'
+  guard $ k < k'
 
   let
     function :: (Int, Int) -> [(Int, (Int, Int))]
@@ -58,23 +57,11 @@ buildGraph (walls,keys,doors,start) = HashMap.fromListWith (HashMap.union) $ do
     Just (weight, path) -> let
       doorsOnPath = HashSet.fromList $ map toLower $ catMaybes (map (\p -> HashMap.lookup p doors) path)
       keysOnPath = HashSet.fromList $ catMaybes (map (\p -> HashMap.lookup p keys) path)
-      in [
-      (k, HashMap.singleton k' (weight, doorsOnPath, keysOnPath))
-      ,(k', HashMap.singleton k (weight, doorsOnPath, keysOnPath))
-      ]
-
-findLatestKey graph = let
-  fromStart = map (\(k, (_, d, _)) -> (k, d)) $ HashMap.toList (graph HashMap.! '@')
-
-  go [(k, _)] = k
-  go l = let
-    (noDeps, hasDeps) = partition (\(_, d) -> null d) l
-
-    noDepsKey = HashSet.fromList (map fst noDeps)
-    hasDeps' = map (\(k, d) -> (k, d `HashSet.difference` noDepsKey)) hasDeps
-    in go hasDeps'
-
-  in go fromStart
+      in
+      (k, HashMap.singleton k' (weight, doorsOnPath, keysOnPath)):
+      if k' /= snd start
+      then [(k', HashMap.singleton k (weight, doorsOnPath, keysOnPath))]
+      else []
 
 -- * Generics
 
@@ -128,7 +115,7 @@ traceShowId' :: Show a => [Char] -> a -> a
 traceShowId' s v = trace (s <> show v) v
 
 -- * SECOND problem
-day' (walls', keys', doors, start) = fst $ minimumBy (comparing fst) $ catMaybes $ do
+day' (walls', keys', doors, start) = fst $ unsafeFromJust $ do
   let graph = buildGraphs (walls', keys', doors, start)
 
   let
@@ -172,7 +159,7 @@ day' (walls', keys', doors, start) = fst $ minimumBy (comparing fst) $ catMaybes
         )
 
 
-  pure (shortestPath f' (+) (Just (('0', '1', '2', '3'), HashSet.empty)) Nothing)
+  shortestPath f' (+) (Just (('0', '1', '2', '3'), HashSet.empty)) Nothing
 
 -- * Tests
 ex0 = parseContent [fmt|\
