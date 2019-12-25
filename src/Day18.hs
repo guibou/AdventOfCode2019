@@ -83,19 +83,22 @@ findLatestKey graph = let
 day (walls, keys, doors, start) = fst $ unsafeFromJust $ do
   let graph = buildGraph (walls, keys, doors, (start, '@'))
 
-  let k = findLatestKey graph
-
   let
-    f :: (Char, HashSet Char) -> [(Int, (Char, HashSet Char))]
-    f (p, availableKeys) = do
+    f :: Maybe (Char, HashSet Char) -> [(Int, Maybe (Char, HashSet Char))]
+    f Nothing = []
+    f (Just (p, availableKeys)) = do
       (p', (weight, doorsOnPath, keysOnPath)) <- HashMap.toList $ graph HashMap.! p
 
       guard $ not $ p' `HashSet.member` availableKeys
       guard $ null (doorsOnPath `HashSet.difference` availableKeys)
 
-      pure (weight, (p', HashSet.insert p' (availableKeys `HashSet.union` keysOnPath)))
+      let newHash = HashSet.insert p' (availableKeys `HashSet.union` keysOnPath)
 
-  shortestPath f (+) ('@', HashSet.empty) (k, HashSet.fromList (HashMap.elems keys))
+      if newHash == HashSet.fromList (HashMap.elems keys)
+        then pure (weight, Nothing)
+        else pure (weight, Just (p', newHash))
+
+  shortestPath f (+) (Just ('@', HashSet.empty)) Nothing
 
 -- A vertex is named ('x', set(...)).
 -- ('x' is the key and the set is the set of owned keys)
@@ -128,41 +131,48 @@ traceShowId' s v = trace (s <> show v) v
 day' (walls', keys', doors, start) = fst $ minimumBy (comparing fst) $ catMaybes $ do
   let graph = buildGraphs (walls', keys', doors, start)
 
-  -- TODO: optimize this section by just looking for keys that really exists for
-  -- each subsection. Because right now we are computing 26 * 26 * 26 * 26 possibilities
-  (k0, ks) <- select $ HashMap.elems keys'
-  (k1, ks') <- select ks
-  (k2, ks'') <- select ks'
-  (k3, _) <- select ks''
-
   let
-    f :: (Char, HashSet Char) -> [(Int, (Char, HashSet Char))]
+    f :: (Char, HashSet Char) -> [(Int, Maybe (Char, HashSet Char))]
     f (p, availableKeys) = do
       (p', (weight, doorsOnPath, keysOnPath)) <- maybe [] HashMap.toList (HashMap.lookup p graph)
 
       guard $ not $ p' `HashSet.member` availableKeys
       guard $ null (doorsOnPath `HashSet.difference` availableKeys)
 
-      pure (weight, (p', HashSet.insert p' (availableKeys `HashSet.union` keysOnPath)))
+      let newHash = HashSet.insert p' (availableKeys `HashSet.union` keysOnPath)
 
-    f' :: ((Char, Char, Char, Char), HashSet Char) -> [(Int, ((Char, Char, Char, Char), HashSet Char))]
-    f' ((a, b, c, d), availableKeys) =
+      if newHash == HashSet.fromList (HashMap.elems keys')
+        then pure (weight, Nothing)
+        else pure (weight, Just (p', newHash))
+
+    f' :: Maybe ((Char, Char, Char, Char), HashSet Char) -> [(Int, Maybe ((Char, Char, Char, Char), HashSet Char))]
+    f' Nothing = []
+    f' (Just ((a, b, c, d), availableKeys)) =
       let
         as' = f (a, availableKeys)
         bs' = f (b, availableKeys)
         cs' = f (c, availableKeys)
         ds' = f (d, availableKeys)
       in
-        map (\(w, (a', ak')) -> (w, ((a', b, c, d), ak'))) as'
-        <>
-        map (\(w, (b', bk')) -> (w, ((a, b', c, d), bk'))) bs'
-        <>
-        map (\(w, (c', ck')) -> (w, ((a, b, c', d), ck'))) cs'
-        <>
-        map (\(w, (d', dk')) -> (w, ((a, b, c, d'), dk'))) ds'
+        (flip map as' $ \case
+          (w, Nothing) -> (w, Nothing)
+          (w, Just (a', ak')) -> (w, Just ((a', b, c, d), ak'))
+        ) <>
+        (flip map bs' $ \case
+          (w, Nothing) -> (w, Nothing)
+          (w, Just (b', bk')) -> (w, Just ((a, b', c, d), bk'))
+        ) <>
+        (flip map cs' $ \case
+          (w, Nothing) -> (w, Nothing)
+          (w, Just (c', ck')) -> (w, Just ((a, b, c', d), ck'))
+        ) <>
+        (flip map ds' $ \case
+          (w, Nothing) -> (w, Nothing)
+          (w, Just (d', dk')) -> (w, Just ((a, b, c, d'), dk'))
+        )
 
 
-  pure (shortestPath f' (+) (('0', '1', '2', '3'), HashSet.empty) ((k0, k1, k2, k3), HashSet.fromList (HashMap.elems keys')))
+  pure (shortestPath f' (+) (Just (('0', '1', '2', '3'), HashSet.empty)) Nothing)
 
 -- * Tests
 ex0 = parseContent [fmt|\
@@ -237,5 +247,5 @@ test = do
   describe "works" $ do
     it "on first star" $ do
       day fileContent `shouldBe` 4590
---    it "on second star" $ do
---      day' fileContent `shouldBe` 1238
+    it "on second star" $ do
+      day' fileContent `shouldBe` 2086
