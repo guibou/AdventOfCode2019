@@ -34,8 +34,8 @@ dealWithIncrement n lenStack posFinal = let
 -- Custom arithmetic
 
 data Arith
-  = Add [Arith]
-  | Mul [Arith]
+  = Add' Arith Arith
+  | Mul' Arith Arith
   | Lit Integer
   | Negate Arith
   | Arith :%: Arith
@@ -45,29 +45,45 @@ data Arith
 simplify :: Arith -> Arith
 simplify = \case
   Negate (Negate v) -> simplify v
-  Negate (Mul (x:xs)) -> Mul (map simplify (Negate x: xs))
-  Negate (Mul []) -> Lit 0
   l@(Lit _) -> l
-  Negate (Add l) -> Add (map (simplify . Negate) l)
+  Negate (Add' a b) -> Add' (Negate (simplify a)) (Negate (simplify b))
+  Negate (Mul' a b) -> Mul' (simplify $ Negate a) (simplify b)
   Negate (Lit a) -> Lit (-a)
-  Mul ((Add l):xs) -> Add (map (\x -> Mul (map simplify (x:xs))) l)
-  Add [x] -> x
-  Mul [x] -> x
-  Mul x -> Mul (map simplify $ accumLitMul $ concatMap unPackMul x)
-  Add l -> Add $ map simplify $ accumLitAdd $ concatMap unPackAdd l
+
+  -- Distribute Add with Mul
+  Mul' (Add' a b) c -> Add' (Mul' (simplify a) (simplify c)) (Mul' (simplify b) (simplify c))
+
+
+  -- bias to the right any tree
+  Add' (Add' a b) c -> Add' (simplify a) (Add' (simplify b) (simplify c))
+  Mul' (Mul' a b) c -> Mul' (simplify a) (Mul' (simplify b) (simplify c))
+  -- Compact literals
+  Add' (Lit a) (Add' (Lit b) c) -> Add' (Lit (a + b)) (simplify c)
+  Mul' (Lit a) (Mul' (Lit b) c) -> Mul' (Lit (a * b)) (simplify c)
+  Add' (Lit a) (Lit b) -> Lit (a + b)
+  Mul' (Lit a) (Lit b) -> Lit (a * b)
+
+  -- Drop neutral elements
+  Add' (Lit 0) b -> simplify b
+  Mul' (Lit 1) b -> simplify b
+
+  Add' x y -> Add' (simplify x) (simplify y)
+  Mul' x y -> Mul' (simplify x) (simplify y)
+
   a :%: (Lit v) -> (simplify $ killMod v a) :%: (Lit v)
   e@(Negate Var) -> e
   Negate e -> Negate $ simplify e
   Var -> Var
   o -> o
 
+
 killMod :: Integer -> Arith -> Arith
 killMod v = \case
   Lit i -> Lit (i `mod` v)
   Negate e -> Negate $ killMod v e
-  Mul l -> Mul (map (killMod v) l)
   Var -> Var
-  Add l -> Add (map (killMod v) l)
+  Add' a b -> Add' (killMod v a) (killMod v b)
+  Mul' a b -> Mul' (killMod v a) (killMod v b)
   a :%: (Lit v')
     | v == v' -> killMod v a
     | otherwise -> error "MODULO ARE NOT THE SAME"
@@ -76,9 +92,9 @@ killMod v = \case
 eval var = \case
   Lit i -> i
   Negate e -> - eval var e
-  Mul l -> product (map (eval var) l)
-  Add l -> sum (map (eval var) l)
   Var -> var
+  Add' a b -> eval var a + eval var b
+  Mul' a b -> eval var a * eval var b
   a :%: e -> (eval var a) `mod` (eval var e)
 
 simplify' x = let
@@ -88,36 +104,13 @@ simplify' x = let
   then x'
   else simplify' x'
 
-unPackAdd (Add l) = l
-unPackAdd x = [x]
-
-unPackMul (Mul l) = l
-unPackMul x = [x]
-
-accumLitAdd l = go 0 l
-  where
-    go n []
-      | n == 0 = []
-      | otherwise = [Lit n]
-    go n (Lit x: xs) = go (n + x) xs
-    go n (x: xs) = x: go n xs
-
-accumLitMul l = go 1 l
-  where
-    go n []
-      | n == 1 = []
-      | otherwise = [Lit n]
-    go n (Lit x: xs) = go (n * x) xs
-    go n (x: xs) = x: go n xs
-
-
-infixl 6 `Add`
-infixl 7 `Mul`
+infixl 6 `Add'`
+infixl 7 `Mul'`
 infixl 7 :%:
 
 instance Num Arith where
-  (+) a b = Add [a, b]
-  (*) a b = Mul [a, b]
+  (+) a b = Add' a b
+  (*) a b = Mul' a b
   fromInteger i = Lit i
   negate = Negate
   abs = error "abs"
@@ -180,7 +173,7 @@ exists k
 -}
 
 finalForm :: Integer -> Arith -> Integer
-finalForm power (Add [Mul [Var, Lit a], Lit b] :%: Lit m) = let
+finalForm power (Add' (Mul' Var (Lit a)) (Lit b) :%: Lit m) = let
   V2 (V2 a' b') _ = fastMatrixPower power m (V2 (V2 a b) (V2 0 1))
   in (a' * 2020 + b') `mod` m
 finalForm _ _ = error "Equation is not of the form (a * x + b) `mod` m"
