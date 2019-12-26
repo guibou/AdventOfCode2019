@@ -13,5 +13,7 @@ developPackage {
         ver = "0.0.16";
         sha256 = "0icdyvxxi7493ch8xlpwn024plspbsdssxmcy5984yar298z8hcw";
       } {};
+
+      besout = haskell.lib.doJailbreak super.besout;
     };
 }

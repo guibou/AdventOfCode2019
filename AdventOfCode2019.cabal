@@ -58,7 +58,8 @@ library
                        PyF,
                        ansi-terminal,
                        linear,
-                       weigh
+                       weigh,
+                       besout
 
   default-extensions: TupleSections
                     , DeriveAnyClass
