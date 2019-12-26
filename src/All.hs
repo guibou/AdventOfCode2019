@@ -24,6 +24,7 @@ import Day17
 import Day18 -- Super slow
 import Day19
 import Day20
+import Day21
 
 allDays = sortBy (comparing fst) $(thisModuleName)
 
