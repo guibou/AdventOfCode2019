@@ -113,26 +113,7 @@ eval var = \case
   Mul a b -> eval var a * eval var b
   a :%: e -> (eval var a) `mod` e
 
--- * Utils
-
-simplify' x = let
-  x' = simplify x
-  in
-  if x == x'
-  then x'
-  else simplify' x'
-
-fastMatrixPower 0 _ _ = V2 (V2 1 0) (V2 0 1)
-fastMatrixPower 1 m mat = (`mod`m) <$$> mat
-fastMatrixPower n m v = do
-  let
-    approximateSqrt = truncate @Double $ sqrt $ fromIntegral n
-    rest = n - (approximateSqrt * approximateSqrt)
-
-    sqrtMatrix = fastMatrixPower approximateSqrt m $ fastMatrixPower approximateSqrt m v
-  sqrtMatrix !*! (fastMatrixPower rest m v)
-
--- Final utils
+-- * Final utils
 
 computeArith :: Integer -> [_] -> Arith
 computeArith deckSize problem = foldl' (.) identity (map ($ deckSize) problem) Var
@@ -151,11 +132,11 @@ finalForm _ _ = error "Equation is not of the form (a * x + b) `mod` m"
 -- * FIRST problem
 day :: Integer -> Integer -> _ -> Integer
 day nbCards lookFor instructions = let
-  arith = simplify' $ computeArith nbCards instructions
+  arith = fixpoint simplify $ computeArith nbCards instructions
   in unsafeFromJust $ find (\x -> eval x arith == lookFor) [0..nbCards-1]
 
 -- * SECOND problem
-day' instructions = finalForm nTimes $ simplify' $ computeArith deckSize instructions
+day' instructions = finalForm nTimes $ fixpoint simplify $ computeArith deckSize instructions
   where
     nTimes :: Integer
     nTimes = 101741582076661

@@ -21,6 +21,7 @@ module Utils (
 
 import Protolude
 import Unsafe
+import Linear
 
 import Generics.Deriving.Enum (genum, GEnum)
 
@@ -239,3 +240,23 @@ bisect p bounds = uncurry go bounds
       | otherwise = go a mid
       where
         mid = (a + b) `div` 2
+
+-- | Apply f until it become stable
+fixpoint f x = let
+  x' = f x
+  in
+  if x == x'
+  then x'
+  else fixpoint f x'
+
+-- | @fastMatrixPower n m mat@ = (mat ^ n) `mod` m
+-- Using a fast power heuristic (so n can be hyper large)
+fastMatrixPower 0 _ _ = V2 (V2 1 0) (V2 0 1)
+fastMatrixPower 1 m mat = (`mod`m) <$$> mat
+fastMatrixPower n m v = do
+  let
+    approximateSqrt = truncate @Double $ sqrt $ fromIntegral n
+    rest = n - (approximateSqrt * approximateSqrt)
+
+    sqrtMatrix = fastMatrixPower approximateSqrt m $ fastMatrixPower approximateSqrt m v
+  sqrtMatrix !*! (fastMatrixPower rest m v)
