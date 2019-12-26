@@ -23,7 +23,7 @@ parseContent = unsafeParse $ Text.Megaparsec.many $ choice
 
 -- * Transform function from an offset to the one of the card BEFORE the deal
 
-dealIntoNewStack lenStack posFinal = Lit lenStack :-: posFinal :-: Lit 1
+dealIntoNewStack lenStack posFinal = Lit lenStack :+: (Negate $ (posFinal :+: Lit 1))
 
 cut n lenStack posFinal = (posFinal :+: Lit n) :%: lenStack
 
@@ -50,28 +50,19 @@ pattern Add a b = a :+: b
 pattern Mul :: Arith -> Arith -> Arith
 pattern Mul a b = a :*: b
 
-pattern (:-:) :: Arith -> Arith -> Arith
-pattern a :-: b = a :+: (Negate b)
-
 infixl 6 :+:
 infixl 7 :*:
 infixl 7 :%:
-infixl 6 :-:
 
 simplify :: Arith -> Arith
 simplify = \case
-  Negate (Negate v) -> simplify v
-  l@(Lit _) -> l
-  Negate (Add a b) -> Add (Negate (simplify a)) (Negate (simplify b))
-  Negate (Mul a b) -> Mul (simplify $ Negate a) (simplify b)
-  Negate (Lit a) -> Lit (-a)
-
   -- Distribute Add with Mul
   Mul (Add a b) c -> Add (Mul (simplify a) (simplify c)) (Mul (simplify b) (simplify c))
 
   -- bias to the right any tree
   Add (Add a b) c -> Add (simplify a) (Add (simplify b) (simplify c))
   Mul (Mul a b) c -> Mul (simplify a) (Mul (simplify b) (simplify c))
+
   -- Compact literals
   Add (Lit a) (Add (Lit b) c) -> Add (Lit (a + b)) (simplify c)
   Mul (Lit a) (Mul (Lit b) c) -> Mul (Lit (a * b)) (simplify c)
@@ -82,15 +73,25 @@ simplify = \case
   Add (Lit 0) b -> simplify b
   Mul (Lit 1) b -> simplify b
 
+  -- recursion for add/mul
   Add x y -> Add (simplify x) (simplify y)
   Mul x y -> Mul (simplify x) (simplify y)
 
   a :%: v -> (simplify $ killMod v a) :%: v
-  e@(Negate Var) -> e
+
+  -- Negate
+  Negate Var -> Negate Var
+  Negate (Negate v) -> simplify v
+  Negate (Add a b) -> Add (Negate (simplify a)) (Negate (simplify b))
+  Negate (Mul a b) -> Mul (simplify $ Negate a) (simplify b)
+  Negate (Lit a) -> Lit (-a)
   Negate e -> Negate $ simplify e
+
+  -- Terminals
+  Lit i -> Lit i
   Var -> Var
 
-
+-- | Remove modulo operator
 killMod :: Integer -> Arith -> Arith
 killMod v = \case
   Lit i -> Lit (i `mod` v)
@@ -103,6 +104,7 @@ killMod v = \case
     | otherwise -> error "MODULO ARE NOT THE SAME"
   a :%: e -> a :%: e
 
+-- | Eval the expression
 eval var = \case
   Lit i -> i
   Negate e -> - eval var e
@@ -111,62 +113,14 @@ eval var = \case
   Mul a b -> eval var a * eval var b
   a :%: e -> (eval var a) `mod` e
 
+-- * Utils
+
 simplify' x = let
   x' = simplify x
   in
   if x == x'
   then x'
   else simplify' x'
-
-foo :: Integer -> [_] -> Arith
-foo deckSize problem = foldl' (.) identity (map ($ deckSize) problem) Var
-
-
-{-
-Add [Mul [Negate Var,Lit 567],Lit 539
-
-
-(-x) * 567 + 539
-
--}
-
-{-
-
-We know that:
-
-posFinal = (posCurrent * incr) `mod` len
-
-
-solution: posCurrent = posFinal * incr^-1 [len]
-
-incr^-1 --> incr * incr^-1 [len] = 1
-
-
-It means that it exists 'k' such that
-
-posCurrent * incr = k * len + posFinal
-
-===>
-
-posCurrent = (k * len) / incr + posFinal / incr
-
-len is prime (or coprime of incr). So incr cannot divid it, so it divid k'. So we have:
-
-k * len + posFinal = k' * incr
-
-exists k
-
-
-
-(k * incr + posCurrent) [len] = posFinal [len]
-
--}
-
-finalForm :: Integer -> Arith -> Integer
-finalForm power ((Var :*: Lit a :+: Lit b) :%: m) = let
-  V2 (V2 a' b') _ = fastMatrixPower power m (V2 (V2 a b) (V2 0 1))
-  in (a' * 2020 + b') `mod` m
-finalForm _ _ = error "Equation is not of the form (a * x + b) `mod` m"
 
 fastMatrixPower 0 _ _ = V2 (V2 1 0) (V2 0 1)
 fastMatrixPower 1 m mat = (`mod`m) <$$> mat
@@ -178,14 +132,30 @@ fastMatrixPower n m v = do
     sqrtMatrix = fastMatrixPower approximateSqrt m $ fastMatrixPower approximateSqrt m v
   sqrtMatrix !*! (fastMatrixPower rest m v)
 
+-- Final utils
+
+computeArith :: Integer -> [_] -> Arith
+computeArith deckSize problem = foldl' (.) identity (map ($ deckSize) problem) Var
+
+finalForm :: Integer -> Arith -> Integer
+finalForm power ((Var :*: Lit a :+: Lit b) :%: m) = let
+  -- I represents (a * x + b) as a matrix multiplication
+  -- (x, 1) * (a b
+  --           0 1)
+  -- Hence, computing this operation N times is easy:
+  -- (x, 1) * (a b 0 1) ^ N
+  V2 (V2 a' b') _ = fastMatrixPower power m (V2 (V2 a b) (V2 0 1))
+  in (a' * 2020 + b') `mod` m
+finalForm _ _ = error "Equation is not of the form (a * x + b) `mod` m"
+
 -- * FIRST problem
 day :: Integer -> Integer -> _ -> Integer
 day nbCards lookFor instructions = let
-  arith = simplify' $ foo nbCards instructions
+  arith = simplify' $ computeArith nbCards instructions
   in unsafeFromJust $ find (\x -> eval x arith == lookFor) [0..nbCards-1]
 
 -- * SECOND problem
-day' instructions = finalForm nTimes $ simplify' $ foo deckSize instructions
+day' instructions = finalForm nTimes $ simplify' $ computeArith deckSize instructions
   where
     nTimes :: Integer
     nTimes = 101741582076661
