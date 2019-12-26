@@ -11,43 +11,28 @@ import Linear hiding (identity, ex)
 
 import Text.Megaparsec
 
-fileContent :: Draw t => [t]
 fileContent = parseContent $(getFile)
 
-parseContent :: (Draw t) => Text -> [t]
 parseContent = unsafeParse $ Text.Megaparsec.many $ choice
   [ dealWithIncrement <$> ("deal with increment " *> parseNumber)
-  , cut <$> ("cut " *> parseNumber)
+  , cut <$> ("cut " *> parseNumber @Integer)
   , dealIntoNewStack <$ "deal into new stack\n"
   ]
 
 -- * Generics
 
--- * FIRST problem
-day :: Integer -> Integer -> _ -> Integer
-day nbCards lookFor instructions = let
-  arith = simplify' $ foo nbCards instructions
-  in unsafeFromJust $ find (\x -> eval x arith == lookFor) [0..nbCards-1]
+-- * Transform function from an offset to the one of the card BEFORE the deal
 
-class Draw t where
-  dealIntoNewStack :: t
-  dealWithIncrement :: Integer -> t
-  cut :: Integer -> t
+dealIntoNewStack lenStack posFinal = fromIntegral lenStack - posFinal - 1
 
-instance Draw ([Integer] -> [Integer]) where
-  dealIntoNewStack l = reverse l
+cut n lenStack posFinal = (posFinal + fromIntegral n) `mod` (fromIntegral lenStack)
 
-  cut n l
-    | n >= 0 = drop (fromIntegral n) l <> take (fromIntegral n) l
-    | otherwise = drop len l <> take len l
-    where len = length l - abs (fromIntegral n)
+dealWithIncrement n lenStack posFinal = let
+  invN = inverseMod n lenStack
+  in posFinal * (fromIntegral invN) `mod` (fromIntegral lenStack)
 
-  dealWithIncrement n l = map snd $ sortBy (comparing fst) $ zipWith f l [0, (fromIntegral n)..]
-    where
-      len = length l
-      f value idx = (idx `mod` len, value)
+-- Custom arithmetic
 
--- * SECOND problem
 data Arith
   = Add [Arith]
   | Mul [Arith]
@@ -124,15 +109,6 @@ accumLitMul l = go 1 l
       | otherwise = [Lit n]
     go n (Lit x: xs) = go (n * x) xs
     go n (x: xs) = x: go n xs
-
-instance Draw (Integer -> Arith  -> Arith) where
-  dealIntoNewStack lenStack posFinal = fromIntegral lenStack - posFinal - 1
-
-  cut n lenStack posFinal = (posFinal + fromIntegral n) `mod` (fromIntegral lenStack)
-
-  dealWithIncrement n lenStack posFinal = let
-    invN = inverseMod n lenStack
-    in posFinal * (fromIntegral invN) `mod` (fromIntegral lenStack)
 
 
 infixl 6 `Add`
@@ -219,6 +195,13 @@ fastMatrixPower n m v = do
     sqrtMatrix = fastMatrixPower approximateSqrt m $ fastMatrixPower approximateSqrt m v
   sqrtMatrix !*! (fastMatrixPower rest m v)
 
+-- * FIRST problem
+day :: Integer -> Integer -> _ -> Integer
+day nbCards lookFor instructions = let
+  arith = simplify' $ foo nbCards instructions
+  in unsafeFromJust $ find (\x -> eval x arith == lookFor) [0..nbCards-1]
+
+-- * SECOND problem
 day' instructions = finalForm nTimes $ simplify' $ foo deckSize instructions
   where
     nTimes :: Integer
@@ -248,7 +231,6 @@ We can ignore the % C
 -- TRY       : 46938179068110. Too low too
 -- TRY       : 58348342289943
 
-ex :: Draw t => [t]
 ex = parseContent [fmt|\
 deal into new stack
 cut -2
@@ -262,21 +244,18 @@ deal with increment 3
 cut -1
 |]
 
-ex' :: Draw t => [t]
 ex' = parseContent [fmt|\
 deal with increment 7
 deal with increment 9
 cut -2
 |]
 
-ex'' :: Draw t => [t]
 ex'' = parseContent [fmt|\
 cut 6
 deal with increment 7
 deal into new stack
 |]
 
-ex''' :: Draw t => [t]
 ex''' = parseContent [fmt|\
 deal with increment 7
 deal into new stack
