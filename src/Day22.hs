@@ -23,13 +23,13 @@ parseContent = unsafeParse $ Text.Megaparsec.many $ choice
 
 -- * Transform function from an offset to the one of the card BEFORE the deal
 
-dealIntoNewStack lenStack posFinal = fromIntegral lenStack - posFinal - 1
+dealIntoNewStack lenStack posFinal = Lit lenStack :-: posFinal :-: Lit 1
 
-cut n lenStack posFinal = (posFinal + fromIntegral n) `mod` (fromIntegral lenStack)
+cut n lenStack posFinal = (posFinal :+: Lit n) :%: lenStack
 
 dealWithIncrement n lenStack posFinal = let
   invN = inverseMod n lenStack
-  in posFinal * (fromIntegral invN) `mod` (fromIntegral lenStack)
+  in (posFinal :*: Lit invN) :%: lenStack
 
 -- Custom arithmetic
 
@@ -38,7 +38,7 @@ data Arith
   | Arith :*: Arith
   | Lit Integer
   | Negate Arith
-  | Arith :%: Arith
+  | Arith :%: Integer
   | Var
   deriving (Show, Eq)
 
@@ -50,6 +50,14 @@ pattern Add a b = a :+: b
 pattern Mul :: Arith -> Arith -> Arith
 pattern Mul a b = a :*: b
 
+pattern (:-:) :: Arith -> Arith -> Arith
+pattern a :-: b = a :+: (Negate b)
+
+infixl 6 :+:
+infixl 7 :*:
+infixl 7 :%:
+infixl 6 :-:
+
 simplify :: Arith -> Arith
 simplify = \case
   Negate (Negate v) -> simplify v
@@ -60,7 +68,6 @@ simplify = \case
 
   -- Distribute Add with Mul
   Mul (Add a b) c -> Add (Mul (simplify a) (simplify c)) (Mul (simplify b) (simplify c))
-
 
   -- bias to the right any tree
   Add (Add a b) c -> Add (simplify a) (Add (simplify b) (simplify c))
@@ -78,11 +85,10 @@ simplify = \case
   Add x y -> Add (simplify x) (simplify y)
   Mul x y -> Mul (simplify x) (simplify y)
 
-  a :%: (Lit v) -> (simplify $ killMod v a) :%: (Lit v)
+  a :%: v -> (simplify $ killMod v a) :%: v
   e@(Negate Var) -> e
   Negate e -> Negate $ simplify e
   Var -> Var
-  o -> o
 
 
 killMod :: Integer -> Arith -> Arith
@@ -92,7 +98,7 @@ killMod v = \case
   Var -> Var
   Add a b -> Add (killMod v a) (killMod v b)
   Mul a b -> Mul (killMod v a) (killMod v b)
-  a :%: (Lit v')
+  a :%: v'
     | v == v' -> killMod v a
     | otherwise -> error "MODULO ARE NOT THE SAME"
   a :%: e -> a :%: e
@@ -103,7 +109,7 @@ eval var = \case
   Var -> var
   Add a b -> eval var a + eval var b
   Mul a b -> eval var a * eval var b
-  a :%: e -> (eval var a) `mod` (eval var e)
+  a :%: e -> (eval var a) `mod` e
 
 simplify' x = let
   x' = simplify x
@@ -111,30 +117,6 @@ simplify' x = let
   if x == x'
   then x'
   else simplify' x'
-
-infixl 6 :+:
-infixl 7 :*:
-infixl 7 :%:
-
-instance Num Arith where
-  (+) a b = Add a b
-  (*) a b = Mul a b
-  fromInteger i = Lit i
-  negate = Negate
-  abs = error "abs"
-  signum = error "signum"
-
-instance Ord Arith where
-  compare = error "compare"
-instance Real Arith where
-  toRational = error "toRational"
-instance Integral Arith where
-  toInteger = error "toInteger"
-  mod = (:%:)
-  quotRem = error "quotRem"
-instance Enum Arith where
-  toEnum = error "toEnum"
-  fromEnum = error "fromEnum"
 
 foo :: Integer -> [_] -> Arith
 foo deckSize problem = foldl' (.) identity (map ($ deckSize) problem) Var
@@ -181,7 +163,7 @@ exists k
 -}
 
 finalForm :: Integer -> Arith -> Integer
-finalForm power ((Var :*: Lit a :+: Lit b) :%: Lit m) = let
+finalForm power ((Var :*: Lit a :+: Lit b) :%: m) = let
   V2 (V2 a' b') _ = fastMatrixPower power m (V2 (V2 a b) (V2 0 1))
   in (a' * 2020 + b') `mod` m
 finalForm _ _ = error "Equation is not of the form (a * x + b) `mod` m"
