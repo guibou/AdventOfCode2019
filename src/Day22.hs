@@ -6,8 +6,8 @@ module Day22 where
 -- second star: 20:37. Well, I had to get my modulo arithmetic back
 
 import Utils hiding ((:*:), (:+:))
-import Data.List (findIndex)
 import Bezout
+import Linear hiding (identity, ex)
 
 import Text.Megaparsec
 
@@ -24,6 +24,11 @@ parseContent = unsafeParse $ Text.Megaparsec.many $ choice
 -- * Generics
 
 -- * FIRST problem
+day :: Integer -> Integer -> _ -> Integer
+day nbCards lookFor instructions = let
+  arith = simplify' $ foo nbCards instructions
+  in unsafeFromJust $ find (\x -> eval x arith == lookFor) [0..nbCards-1]
+
 class Draw t where
   dealIntoNewStack :: t
   dealWithIncrement :: Integer -> t
@@ -41,9 +46,6 @@ instance Draw ([Integer] -> [Integer]) where
     where
       len = length l
       f value idx = (idx `mod` len, value)
-
-day :: _ -> Integer -> Integer -> Int
-day instructions nbCards idx = unsafeFromJust $ findIndex (==idx) $ (foldl' (.) identity (reverse instructions)) [0 :: Integer ..nbCards-1]
 
 -- * SECOND problem
 data Arith
@@ -157,11 +159,9 @@ instance Enum Arith where
   toEnum = error "toEnum"
   fromEnum = error "fromEnum"
 
-foo' :: _ -> [_] -> Arith
-foo' deckSize problem = foldl' (.) identity (map ($ deckSize) problem) Var
+foo :: Integer -> [_] -> Arith
+foo deckSize problem = foldl' (.) identity (map ($ deckSize) problem) Var
 
-foo :: [_] -> Arith
-foo problem = foldl' (.) identity (map ($ (10 :: Integer)) problem) Var
 
 {-
 Add [Mul [Negate Var,Lit 567],Lit 539
@@ -205,27 +205,21 @@ exists k
 
 finalForm :: Integer -> Arith -> Integer
 finalForm power (Add [Mul [Var, Lit a], Lit b] :%: Lit m) = let
-  (a', b', _, _) = fastMatrixPower power m (a, b, 0, 1)
+  V2 (V2 a' b') _ = fastMatrixPower power m (V2 (V2 a b) (V2 0 1))
   in (a' * 2020 + b') `mod` m
 finalForm _ _ = error "Equation is not of the form (a * x + b) `mod` m"
 
-fastMatrixPower 0 _ _ = (1, 0, 0, 1)
-fastMatrixPower 1 m (a, b, c, d) = (a `mod` m, b `mod` m, c `mod` m, d `mod` m)
+fastMatrixPower 0 _ _ = V2 (V2 1 0) (V2 0 1)
+fastMatrixPower 1 m mat = (`mod`m) <$$> mat
 fastMatrixPower n m v = do
   let
     approximateSqrt = truncate @Double $ sqrt $ fromIntegral n
     rest = n - (approximateSqrt * approximateSqrt)
 
     sqrtMatrix = fastMatrixPower approximateSqrt m $ fastMatrixPower approximateSqrt m v
-  sqrtMatrix `matrixMul` (fastMatrixPower rest m v)
+  sqrtMatrix !*! (fastMatrixPower rest m v)
 
-matrixMul (a, b,
-           c, d) (a', b',
-                  c', d') = (a * a' + b * c', a * b' + b * d',
-                             c * a' + d * c', c * b' + d * d')
-
-
-day' instructions = finalForm nTimes $ simplify' $ foo' deckSize instructions
+day' instructions = finalForm nTimes $ simplify' $ foo deckSize instructions
   where
     nTimes :: Integer
     nTimes = 101741582076661
@@ -303,6 +297,6 @@ test = do
 --      day' "" `shouldBe` 0
   describe "works" $ do
     it "on first star" $ do
-      day fileContent 10007 2019 `shouldBe` 6289
+      day 10007 2019 fileContent `shouldBe` 6289
     it "on second star" $ do
       day' fileContent `shouldBe` 58348342289943
