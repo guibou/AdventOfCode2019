@@ -59,7 +59,9 @@ library
                        ansi-terminal,
                        linear,
                        weigh,
-                       besout
+                       besout,
+                       lens,
+                       generic-lens
 
   default-extensions: TupleSections
                     , DeriveAnyClass

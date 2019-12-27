@@ -15,7 +15,7 @@ import Day08
 import Day09
 import Day10
 import Day11
-import Day12 -- Not full
+import Day12
 import Day13
 import Day14
 import Day15
