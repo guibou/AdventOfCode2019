@@ -19,6 +19,13 @@ type Machine intType t = State (MachineState intType) t
 
 data MachineResult t = Terminate | Output t (MachineResult t) | Continuation (t -> MachineResult t)
 
+showMachineResult :: MachineResult Int -> Text
+showMachineResult = \case
+  Terminate -> [fmt|Terminate|]
+  Output t xs -> [fmt|Output {t} {showMachineResult xs}|]
+  Continuation _ -> "Continuation _"
+
+
 type MachineStream t = MachineResult t -> MachineResult t
 
 {-# SPECIALIZE readIntCodeOutput ::Map Int ((Mode, Mode, Mode) -> Machine Int (MachineStream Int)) -> Vector Int -> Int #-}

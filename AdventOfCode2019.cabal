@@ -97,6 +97,7 @@ library
                     , LambdaCase
                     , TypeApplications
                     , NamedFieldPuns
+                    , MultiWayIf
   ghc-options: -Wall -Wno-missing-signatures -fwarn-incomplete-uni-patterns -Wno-missing-home-modules -Wno-deprecations -Wno-partial-type-signatures
 
   default-language:    Haskell2010
