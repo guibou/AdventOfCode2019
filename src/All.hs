@@ -28,6 +28,7 @@ import Day21
 import Day22
 -- import Day23 -- Not Finished star2
 import Day24
+import Day25
 
 allDays = sortBy (comparing fst) $(thisModuleName)
 
