@@ -32,7 +32,7 @@ day' = sum . map crazyFuelRequirement
 
 test :: Spec
 test = do
-  describe "woks" $ do
+  describe "works" $ do
     it "on first star" $ do
       day fileContent `shouldBe` 3380731
     it "on second star" $ do

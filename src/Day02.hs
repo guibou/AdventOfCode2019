@@ -36,7 +36,7 @@ day' v = unsafeHead $ do
 
 test :: Spec
 test = do
-  describe "woks" $ do
+  describe "works" $ do
     it "on first star" $ do
       day fileContent `shouldBe` 4023471
     it "on second star" $ do
