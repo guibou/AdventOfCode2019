@@ -45,7 +45,7 @@ makeGridSet grid =
 -- * FIRST problem
 day :: _ -> _
 day code = let
-  output = runIntCodeOutput lastInstructionSet code []
+  output = runIntCodeOutput code []
   grid = makeGrid output
   (gridSet, _) = makeGridSet grid
 
@@ -70,7 +70,7 @@ day code = let
 -- * SECOND problem
 day' :: _ -> _
 day' code = let
-  output = runIntCodeOutput lastInstructionSet (code V.// [(0, 1)]) []
+  output = runIntCodeOutput (code V.// [(0, 1)]) []
 
   grid = makeGrid output
   (gridSet, robotPos) = makeGridSet grid
@@ -81,7 +81,7 @@ day' code = let
 
   instructions = formatRoutine counts <> formatMotions routines <> [ord 'n', ord '\n']
 
-  robot = runIntCodeOutput lastInstructionSet (code V.// [(0, 2)]) instructions
+  robot = runIntCodeOutput (code V.// [(0, 2)]) instructions
 
   result = drop (length output) robot
 

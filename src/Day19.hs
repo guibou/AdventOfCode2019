@@ -23,7 +23,7 @@ day code = length $ filter (uncurry (isTracted code)) $ do
   pure (x, y)
 
 -- * SECOND problem
-isTracted code x y = (unsafeHead $ runIntCodeOutput lastInstructionSet code [x, y]) == 1
+isTracted code x y = (unsafeHead $ runIntCodeOutput code [x, y]) == 1
 
 linesBounds :: _ -> _
 linesBounds code = (0, 1):(0, 0):go (2 :: Int) (0, 0)

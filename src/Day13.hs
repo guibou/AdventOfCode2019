@@ -19,7 +19,7 @@ fileContent = parseIntCode $(getFile)
 -- * Generics
 -- * FIRST problem
 day :: Vector.Vector Int -> Int
-day c = go 0 $ runIntCodeOutput lastInstructionSet c []
+day c = go 0 $ runIntCodeOutput c []
   where
     go !char [] = char
     go char (_:_:tileMode:xs) = go (case tileMode of
@@ -83,7 +83,7 @@ disp m = do
 day' :: _ -> _
 day' c =
   let
-    gameOutput = runIntCodeOutput lastInstructionSet (c Vector.// [(0, 2)]) (catMaybes (map fst input))
+    gameOutput = runIntCodeOutput (c Vector.// [(0, 2)]) (catMaybes (map fst input))
     input = runGame gameOutput
   in unsafeLast gameOutput
 

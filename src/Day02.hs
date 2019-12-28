@@ -14,7 +14,7 @@ fileContent = parseIntCode $(getFile)
 
 -- * FIRST problem
 day :: Vector Int -> Int
-day v = readIntCodeOutput instructionSet_1_2_99 (v // [(1, 12), (2, 2)])
+day v = readIntCodeOutput (v // [(1, 12), (2, 2)])
 
 -- first star: 15:40
 
@@ -24,7 +24,7 @@ day' v = unsafeHead $ do
     noun <- [0..99]
     verb <- [0..99]
 
-    let res = readIntCodeOutput instructionSet_1_2_99 (v // [(1, noun), (2, verb)])
+    let res = readIntCodeOutput (v // [(1, noun), (2, verb)])
 
     guard $ res == 19690720
     pure (100 * noun + verb)

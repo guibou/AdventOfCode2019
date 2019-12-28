@@ -23,14 +23,14 @@ fileContent = parseIntCode $(getFile)
 
 -- * FIRST problem
 day :: _ -> Int
-day content = unsafeLast $ runIntCodeOutput instructionSet_day5 content [1]
+day content = unsafeLast $ runIntCodeOutput content [1]
 
 -- start for second star: 10:01
 -- second star: 10:10
 
 -- * SECOND problem
 day' :: _ -> Int
-day' content = unsafeLast $ runIntCodeOutput instructionSet_day5' content [5]
+day' content = unsafeLast $ runIntCodeOutput content [5]
 
 -- * Tests
 

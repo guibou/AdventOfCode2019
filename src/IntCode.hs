@@ -9,10 +9,8 @@ TODO:
 import Utils
 
 import Data.Vector as V
-import qualified Data.Map as Map
 import qualified Data.HashMap.Strict as HashMap
 import qualified Text.Megaparsec as P
-
 
 type MachineState t = (Int, HashMap Int t, Int)
 type Machine intType t = State (MachineState intType) t
@@ -28,51 +26,57 @@ showMachineResult = \case
 
 type MachineStream t = MachineResult t -> MachineResult t
 
-{-# SPECIALIZE readIntCodeOutput ::Map Int ((Mode, Mode, Mode) -> Machine Int (MachineStream Int)) -> Vector Int -> Int #-}
+{-# SPECIALIZE readIntCodeOutput :: Vector Int -> Int #-}
 
 -- I just finished IntCode from Day2. I feel this stuff will be used
 -- again, so time for cleaning, making it more generic
-readIntCodeOutput :: (Show t, Integral t) => Map Int ((Mode, Mode, Mode) -> Machine t (MachineStream t)) -> Vector t -> t
-readIntCodeOutput instructions v = let
-  (_, (_, res, _)) = runState (runIntCode instructions) (0, HashMap.fromList (Utils.zip [0..] (V.toList v)), 0)
+readIntCodeOutput :: (Show t, Integral t) => Vector t -> t
+readIntCodeOutput v = let
+  (_, (_, res, _)) = runState runIntCode (0, HashMap.fromList (Utils.zip [0..] (V.toList v)), 0)
   in res HashMap.! 0
 
 -- {-# SPECIALIZE runIntCode :: Map Int ((Mode, Mode, Mode) -> Machine Int (MachineStream Int)) -> Machine Int [Int] #-}
   -- ^ Output machine
 -- | Run a generic IntCode machine, with instruction set defined by the first 'Map'
 runIntCode
-  :: Integral t => Map Int ((Mode, Mode, Mode) -> Machine t (MachineStream t))
-  -> Machine t (MachineResult t)
+  :: Integral t => Machine t (MachineResult t)
   -- ^ Output machine
-runIntCode instructionSet = go
+runIntCode = go
   where
+    instructions = V.fromList [
+      instrAdd,
+      instrMul,
+      instr3,
+      instr4,
+      instr5,
+      instr6,
+      instr7,
+      instr8,
+      instr9
+      ]
+
     go = do
       (instrNumber, modes) <- decodeInstruction
-      -- There is a crappy lazyness leak here
-      -- to be discussed later
-      if instrNumber == 99
-        then pure Terminate
-        else
-        case Map.lookup instrNumber instructionSet of
-          Just instruction -> do
-            output <- instruction modes
-            output <$> go
-          Nothing -> error $ [fmt|WTF in this computer, case unhandled {instrNumber}|]
+      case instrNumber of
+        99 -> pure Terminate
+        _ -> do
+          let instruction = instructions V.! (instrNumber - 1)
+          output <- instruction modes
+          output <$> go
 
-{-# SPECIALIZE runIntCodeOutput :: Map Int ((Mode, Mode, Mode) -> Machine Int (MachineStream Int)) -> Vector Int -> [Int] -> [Int] #-}
+{-# SPECIALIZE runIntCodeOutput :: Vector Int -> [Int] -> [Int] #-}
 
 -- | Similar as 'runIntCode'' however it only returns (lazyly) the output of the machine.
 runIntCodeOutput
   :: Integral t
-  => Map Int ((Mode, Mode, Mode) -> Machine t (MachineStream t))
-  -> Vector t
+  => Vector t
   -- ^ The input machine
   -> [t]
   -- ^ Input state
   -> [t]
   -- ^ (Output state, final vector)
-runIntCodeOutput instructionSet v'' initialInput = let
-  (res, _) = runState (runIntCode instructionSet) (0, HashMap.fromList (Utils.zip [0..] (V.toList v'')), 0)
+runIntCodeOutput v'' initialInput = let
+  (res, _) = runState runIntCode (0, HashMap.fromList (Utils.zip [0..] (V.toList v'')), 0)
   in consumeContinuation res initialInput
 
 consumeContinuation :: Integral t => MachineResult t -> [t] -> [t]
@@ -85,7 +89,7 @@ consumeContinuation (Continuation f) inputs = do
     [] -> error "Not enough input"
 
 startStreamingMachine :: Integral t => Vector t -> MachineResult t
-startStreamingMachine v'' = fst $ runState (runIntCode lastInstructionSet) (0, HashMap.fromList (Utils.zip [0..] (V.toList v'')), 0)
+startStreamingMachine v'' = fst $ runState runIntCode (0, HashMap.fromList (Utils.zip [0..] (V.toList v'')), 0)
 
 
 
@@ -96,12 +100,6 @@ decodeInstruction :: Integral t => Machine t (Int, (Mode, Mode, Mode))
 decodeInstruction = do
   (pos, v, _) <- get
   pure $ decodeMode (fromIntegral (v HashMap.! pos))
-
-instructionSet_1_2_99 :: Integral t => Map Int ((Mode, Mode, Mode) -> Machine t (MachineStream t))
-instructionSet_1_2_99 = Map.fromList [(1, instrAdd), (2, instrMul), (99, instrHalt)]
-
-instructionSet_day5 :: Integral t => Map Int ((Mode, Mode, Mode) -> Machine t (MachineStream t))
-instructionSet_day5 = Map.fromList [(1, instrAdd), (2, instrMul), (99, instrHalt), (3, instr3), (4, instr4)]
 
 {-# SPECIALIZE readMemory :: Mode -> Machine Int Int #-}
 
@@ -147,7 +145,7 @@ instr3 (Position rel, _, _) = do
 
     pure $ const $ Continuation $ \i -> fst $ flip runState st $ do
       alterMemory (fromIntegral savePos, i)
-      runIntCode lastInstructionSet
+      runIntCode
 
 instr3 _ = error "instr3 used in immediate mode"
 
@@ -192,20 +190,6 @@ instr9 (modeA, _, _) = noReturn $ do
   (pc, v, relBase) <- get
 
   put (pc, v, relBase + fromIntegral relOffset)
-
-instructionSet_day5' :: Integral t => Map Int ((Mode, Mode, Mode) -> Machine t (MachineStream t))
-instructionSet_day5' = instructionSet_day5 <> Map.fromList [
-  (5, instr5),
-  (6, instr6),
-  (7, instr7),
-  (8, instr8)
-  ]
-
-instructionSet_day9 :: Integral t => Map Int ((Mode, Mode, Mode) -> Machine t (MachineStream t))
-instructionSet_day9 = instructionSet_day5' <> Map.fromList [(9, instr9)]
-
-lastInstructionSet :: Integral t => Map Int ((Mode, Mode, Mode) -> Machine t (MachineStream t))
-lastInstructionSet = instructionSet_day9
 
 {-# SPECIALIZE instrAdd :: (Mode, Mode, Mode) -> Machine Int (MachineStream Int) #-}
 {-# SPECIALIZE instrMul :: (Mode, Mode, Mode) -> Machine Int (MachineStream Int) #-}

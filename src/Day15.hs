@@ -54,7 +54,7 @@ mapWorld code input = go machine (0, 0) (Map.singleton (0, 0) Free) []
     -- found O2
     readInfo curDir (2: m) pos knownWorld curPath = go m (nextDirection curDir pos) (Map.insert (nextDirection curDir pos) O2 knownWorld) (curDir:curPath)
 
-    machine = runIntCodeOutput lastInstructionSet code (map directionToInput input)
+    machine = runIntCodeOutput code (map directionToInput input)
 
 
 drawWorld code = do

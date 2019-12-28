@@ -84,7 +84,7 @@ NOT T J
 NOT J J
 WALK
 |]
-    machine = runIntCodeOutput @Int lastInstructionSet code input
+    machine = runIntCodeOutput @Int code input
   unsafeLast machine
 
 -- * SECOND problem
@@ -129,7 +129,7 @@ NOT T T
 AND T J
 RUN
 |]
-    machine = runIntCodeOutput @Int lastInstructionSet code input
+    machine = runIntCodeOutput @Int code input
   unsafeLast machine
 -- * Tests
 

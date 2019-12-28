@@ -20,13 +20,13 @@ parseContent = parseIntCode
 
 -- * FIRST problem
 day :: _ -> Integer
-day c = unsafeLast $ runIntCodeOutput instructionSet_day9 c [1]
+day c = unsafeLast $ runIntCodeOutput c [1]
 
 
 
 -- * SECOND problem
 day' :: _ -> Integer
-day' c = unsafeLast $ runIntCodeOutput instructionSet_day9 c [2]
+day' c = unsafeLast $ runIntCodeOutput c [2]
 
 -- * Tests
 

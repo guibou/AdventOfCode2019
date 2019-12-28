@@ -54,7 +54,7 @@ parseContent = Vector.fromList . unsafeParse (parseNumber `sepBy` ",")
 solve :: Int -> Vector Int -> (Set (Int, Int), Set (Int, Int))
 solve firstInput content = unsafeHead $ rights algo
   where
-    outputs = runIntCodeOutput lastInstructionSet content inputs
+    outputs = runIntCodeOutput content inputs
     algo = runRobot outputs
     inputs = firstInput:lefts algo
 
