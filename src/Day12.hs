@@ -16,8 +16,8 @@ fileContent :: _
 fileContent = parseContent $(getFile)
 
 data Moon = Moon {
-  pos :: V3 Integer,
-  vel :: V3 Integer
+  pos :: V3 Int,
+  vel :: V3 Int
   }
   deriving (Show, Eq, Generic)
 
@@ -62,7 +62,7 @@ ex1 = parseContent [fmt|\
 <x=9, y=-8, z=-3>|]
 
 
-day :: [Moon] -> Int -> Integer
+day :: [Moon] -> Int -> Int
 day moons n = sum . map moonEnergy . applyN n step $ moons
 
 -- * SECOND problem
@@ -85,11 +85,10 @@ dayAlt start = let
 proj axis x = (view (field @"vel" . axis) x, view (field @"pos" . axis) x)
 
 
+day' :: [Moon] -> Int
 day' = simplify . dayAlt
 
-
--- I don't understand what I've found by trial and error
-simplify [a, b, c] = (a * b * c) `div` (gcd (gcd (a * b) (b * c)) (a * c))
+simplify l = unsafeFromJust $ foldl1May' lcm l
 -- * Tests
 
 --
