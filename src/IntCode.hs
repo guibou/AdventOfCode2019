@@ -1,10 +1,12 @@
-module IntCode where
-
-{-
-TODO:
-- fix the crappy lazyness leak
-- fix the instruction set. Some places hardcode "lastInstructionSet" and this should be simplified
--}
+module IntCode
+  ( readIntCodeOutput
+  , MachineResult(..)
+  , runIntCodeOutput
+  , parseIntCode
+  , startStreamingMachine
+  , test
+  , showMachineResult
+  ) where
 
 import Utils
 
@@ -35,7 +37,7 @@ readIntCodeOutput v = let
   (_, (_, res, _)) = runState runIntCode (0, HashMap.fromList (Utils.zip [0..] (V.toList v)), 0)
   in res HashMap.! 0
 
--- {-# SPECIALIZE runIntCode :: Map Int ((Mode, Mode, Mode) -> Machine Int (MachineStream Int)) -> Machine Int [Int] #-}
+{-# SPECIALIZE runIntCode :: Machine Int (MachineResult Int) #-}
   -- ^ Output machine
 -- | Run a generic IntCode machine, with instruction set defined by the first 'Map'
 runIntCode
@@ -193,7 +195,6 @@ instr9 (modeA, _, _) = noReturn $ do
 
 {-# SPECIALIZE instrAdd :: (Mode, Mode, Mode) -> Machine Int (MachineStream Int) #-}
 {-# SPECIALIZE instrMul :: (Mode, Mode, Mode) -> Machine Int (MachineStream Int) #-}
-{-# SPECIALIZE instrHalt :: (Mode, Mode, Mode) -> Machine Int (MachineStream Int) #-}
 {-# SPECIALIZE instr3 :: (Mode, Mode, Mode) -> Machine Int (MachineStream Int) #-}
 {-# SPECIALIZE instr4 :: (Mode, Mode, Mode) -> Machine Int (MachineStream Int) #-}
 {-# SPECIALIZE instr5 :: (Mode, Mode, Mode) -> Machine Int (MachineStream Int) #-}
@@ -202,10 +203,9 @@ instr9 (modeA, _, _) = noReturn $ do
 {-# SPECIALIZE instr8 :: (Mode, Mode, Mode) -> Machine Int (MachineStream Int) #-}
 {-# SPECIALIZE instr9 :: (Mode, Mode, Mode) -> Machine Int (MachineStream Int) #-}
 
-instrAdd, instrMul, instrHalt, instr3, instr4, instr5, instr6, instr7, instr8, instr9 :: Integral t => (Mode, Mode, Mode) -> Machine t (MachineStream t)
+instrAdd, instrMul, instr3, instr4, instr5, instr6, instr7, instr8, instr9 :: Integral t => (Mode, Mode, Mode) -> Machine t (MachineStream t)
 instrAdd = instrBinop (+)
 instrMul = instrBinop (*)
-instrHalt _ = pure $ const Terminate
 
 -- * Machine instructions
 
