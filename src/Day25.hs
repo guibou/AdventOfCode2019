@@ -62,7 +62,8 @@ interactive machine = do
   interactive machine'
 
 -- * Generics
-day code = do
+day :: Monad m => (IO () -> m ()) -> _ -> m Int
+day debug code = do
   let
     machine = startStreamingMachine code
 
@@ -72,7 +73,7 @@ day code = do
         go machine (items: itemss) = do
           -- TODO: optimisation here, we can avoid some drops ;)
           let messages = (map ("drop " <>) allItems) <> (map ("take " <>) items) <> ["west"]
-          print messages
+          debug $ print messages
           let (lastMessage, machine') = sendMessages messages machine
 
           if not ("Security Checkpoint" `Text.isInfixOf` lastMessage)
@@ -85,11 +86,11 @@ day code = do
     go machine (action:actions) = do
       let (display, machine') = sendMessage action machine
 
-      putStrLn display
+      debug $ putStrLn display
       go machine' actions
 
   let (display, machine') = consumeToContinuation machine
-  putStrLn display
+  debug $ putStrLn display
   go machine' pathToSecurityCheck
 
 consumeToContinuation m = case m of
@@ -108,7 +109,7 @@ test :: Spec
 test = do
   describe "works" $ do
     it "on first star" $ do
-      day fileContent `shouldReturn` 136839232
+      day (const (pure ())) fileContent `shouldReturn` 136839232
 
 
 

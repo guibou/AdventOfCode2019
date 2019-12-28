@@ -1,6 +1,6 @@
 import All
 
 main = do
-  tests'
+  tests
   -- Commented out for now, it is useless
   -- testsWeigh
