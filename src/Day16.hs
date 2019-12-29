@@ -60,10 +60,12 @@ day ints = toInt $ VU.toList $ VU.take 8 $ applyN' 100 phase (VU.fromList ints)
 -- * SECOND problem
 day' :: _ -> _
 day' ints = let
-  offset = toInt $ take 7 ints
+  !offset = toInt $ take 7 ints
 
-  res = applyN' 100 phase (VU.fromList (mconcat $ replicate 10000 ints))
-  in toInt $ VU.toList $ VU.slice offset 8 res
+  go v = VU.map (\x -> abs x `mod` 10) $ VU.scanr1 (+) v
+
+  res = applyN' 100 go (VU.fromList (drop offset $ mconcat $ replicate 10000 ints))
+  in toInt $ VU.toList $ VU.take 8 res
 
 -- Too high: 96324612
 
@@ -84,6 +86,5 @@ test = do
   describe "works" $ do
     it "on first star" $ do
       day fileContent `shouldBe` 29795507
---    it "on second star" $ do
--- FUCKING TOO SLOW!
---      day' fileContent `shouldBe` 89568529
+    it "on second star" $ do
+      day' fileContent `shouldBe` 89568529

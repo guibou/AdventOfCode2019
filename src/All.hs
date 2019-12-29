@@ -19,7 +19,7 @@ import Day12
 import Day13
 import Day14
 import Day15
-import Day16 -- star 2 is not tested because too slow right now
+import Day16
 import Day17
 import Day18 -- Super slow
 import Day19
